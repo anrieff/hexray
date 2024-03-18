@@ -128,3 +128,11 @@ inline Vector operator / (const Vector& a, double divider)
 	double multiplier = 1.0 / divider;
 	return Vector(a.x * multiplier, a.y * multiplier, a.z * multiplier);
 }
+/// distance between two points
+inline double distance(const Vector& a, const Vector& b)
+{
+	return sqrt((a.x - b.x)*(a.x - b.x)
+	          + (a.y - b.y)*(a.y - b.y)
+	          + (a.z - b.z)*(a.z - b.z)
+	);
+}
