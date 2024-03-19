@@ -27,38 +27,90 @@
 #include "sdl.h"
 #include "color.h"
 #include "vector.h"
+#include "camera.h"
+#include "geometry.h"
+#include "shading.h"
+#include <vector>
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
+Camera camera;
+Color backgroundColor(0, 0, 0);
+
+struct Node {
+	Geometry* geom;
+	Shader* shader;
+};
+
+std::vector<Node> nodes;
+
+Sphere sphere(Vector(-10, 60, 0), 30);
+
+void setupScene()
+{
+	camera.pos.set(0, 60, -120);
+	camera.beginFrame();
+	nodes.push_back(Node{ new Plane(15), new Checker(Color(0, 0, 0.8), Color(0.2, 0.3, 0.6))});
+	nodes.push_back(Node{ &sphere, new Checker(Color(0.8, 0, 0), Color(0.6, 0.4, 0.1), 9)});
+	lightPos.set(+30, +100, -70);
+	lightColor.setColor(1, 1, 1);
+	lightIntensity = 10000.0;
+}
+
+Color raytrace(Ray ray)
+{
+	IntersectionInfo closestIntersection;
+	closestIntersection.dist = INF;
+	Node closestNode;
+	//
+	for (auto& node: nodes) {
+		IntersectionInfo info;
+		if (node.geom->intersect(ray, info) && info.dist < closestIntersection.dist) {
+			closestIntersection = info;
+			closestNode = node;
+		}
+	}
+	//
+	if (closestIntersection.dist >= INF) return backgroundColor;
+	return closestNode.shader->computeColor(ray, closestIntersection);
+}
+
+bool visible(Vector A, Vector B)
+{
+	double D = distance(A, B) - 1e-3;
+	Ray ray;
+	ray.start = A;
+	ray.dir = B - A;
+	ray.dir.normalize();
+	//
+	for (auto& node: nodes) {
+		IntersectionInfo info;
+		if (node.geom->intersect(ray, info) && info.dist < D) {
+			return false;
+		}
+	}
+	//
+	return true;
+}
 
 void render()
 {
-	double centerX = frameWidth() * 0.5;
-	double centerY = frameHeight() * 0.5;
-	double radius = 100.0;
-	double border = 40;
 	for (int y = 0; y < frameHeight(); y++)
 		for (int x = 0; x < frameWidth(); x++) {
-			double dx = x - centerX;
-			double dy = y - centerY;
-			double dist = sqrt(dx*dx + dy*dy);
-			float intensity;
-			if (dist < radius - border/2) intensity = 1;
-			else if (dist < radius + border/2) {
-				intensity = (dist - radius) / border;
-				// if dist = radius - border/2 -> intensity = -0.5
-				// if dist = radius            -> intensity = 0
-				// if dist = radius + border/2 -> intensity = +0.5
-				intensity = -intensity+0.5; // [-0.5 .. +0.5] -> [0.0 .. 1.0]
-			} else intensity = 0;
-			vfb[y][x] = Color(0.0, intensity * 0.4f, intensity);
+			Ray ray = camera.getScreenRay(x, y);
+			vfb[y][x] = raytrace(ray);
 		}
 }
 
 int main(int argc, char** argv)
 {
 	initGraphics(800, 600);
-	render();
-	displayVFB(vfb);
+	setupScene();
+//	for (double y = 60; y >= -30; y -= 1.5) {
+//		sphere.O.y = y;
+		camera.beginFrame();
+		render();
+		displayVFB(vfb);
+//	}
 	waitForUserExit();
 	closeGraphics();
 	printf("Exited cleanly\n");

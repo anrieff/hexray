@@ -22,3 +22,35 @@
  * @Brief Contains declarations of shader classes
  */
 #pragma once
+
+#include "color.h"
+#include "vector.h"
+#include "geometry.h"
+
+extern Vector lightPos;
+extern Color lightColor;
+extern float lightIntensity;
+
+
+class Shader {
+public:
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
+};
+
+class ConstantShader: public Shader {
+public:
+    Color color;
+    ConstantShader(Color col = Color(0.5, 0.5, 0.5)): color(col) {}
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Checker: public Shader {
+public:
+    Color col1, col2;
+    float scaling = 20.0f;
+    Checker(
+        Color col1 = Color(0.5, 0.5, 0.5),
+        Color col2 = Color(0.1, 0.1, 0.8),
+        float scaling = 20.0f): col1(col1), col2(col2), scaling(scaling) {}
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};

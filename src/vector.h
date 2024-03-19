@@ -136,3 +136,9 @@ inline double distance(const Vector& a, const Vector& b)
 	          + (a.z - b.z)*(a.z - b.z)
 	);
 }
+
+
+struct Ray {
+	Vector start;
+	Vector dir; // ! unit vector!
+};

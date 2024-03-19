@@ -22,3 +22,5 @@
  * @Brief Raytracer main file
  */
 #pragma once
+
+bool visible(Vector A, Vector B);

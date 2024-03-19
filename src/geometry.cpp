@@ -21,3 +21,51 @@
  * @File geometry.cpp
  * @Brief Contains implementations of geometry primitives' intersection methods.
  */
+
+#include "geometry.h"
+#include "util.h"
+
+bool Plane::intersect(Ray ray, IntersectionInfo& info)
+{
+    if (ray.start.y > y && ray.dir.y >= 0) return false;
+    if (ray.start.y < y && ray.dir.y <= 0) return false;
+    //
+    double going = ray.dir.y; // -1  * X ->    vv
+    double toGo = (this->y) - ray.start.y; // -5
+    //
+    double m = toGo / going;
+    info.dist = m;
+    info.ip = ray.start + ray.dir * m;
+    info.norm.set(0, (ray.start.y > y) ? 1 : -1, 0);
+    info.u = info.ip.x;
+    info.v = info.ip.z;
+    return true;
+}
+
+bool Sphere::intersect(Ray ray, IntersectionInfo& info)
+{
+    double A = ray.dir.lengthSqr();
+    Vector H = ray.start - O;
+    double B = 2 * dot(ray.dir, H);
+    double C = H.lengthSqr() - R*R;
+    //p^2*A + p*B + C = 0
+    double D = B*B - 4*A*C;
+    if (D < 0) return false;
+    //
+    double sqrtD = sqrt(D);
+    double p1 = (-B-sqrtD)/(2*A);
+    double p2 = (-B+sqrtD)/(2*A);
+    double p;
+    // p2 >= p1!
+    if (p2 < 0) return false;
+    if (p1 < 0) p = p2;
+    else p = p1;
+    //
+    info.dist = p;
+    info.ip = ray.start + ray.dir * p;
+    info.norm = info.ip - O;
+    info.norm.normalize();
+    info.v = toDegrees(asin(info.norm.y));
+    info.u = toDegrees(atan2(info.norm.x, info.norm.z));
+    return true;
+}
