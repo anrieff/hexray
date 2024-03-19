@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.7)
 # For Windows users: make sure you've unpacked your SDL in either
 #   - your user dir, subdir "develop\SDK", e.g. C:\Users\YOUR_USER\develop\SDK\SDL2-2.30.1
 #   - in C:\SDK, e.g. C:\SDK\SDL2-2.30.1
+#   - or in arbitrary directory provided in CMAKE_PREFIX_PATH
 # For Linux and Mac OS X users: you don't need to do anything besides installing SDL2 with your package manager
-IF (WIN32)
-    set(CMAKE_PREFIX_PATH "~/develop/SDK;c:\\SDK")
+if (WIN32)
+    set(CMAKE_PREFIX_PATH "~/develop/SDK;c:\\SDK;${CMAKE_PREFIX_PATH}")
     if (CMAKE_GENERATOR STREQUAL "NMake Makefiles")
         message("If you get an error about 'nmake' missing, be sure to call CMake with -G 'MinGW Makefiles'")
-    ENDIF()
-ENDIF()
+    endif()
+endif()
 project(heX-Ray)
 
 find_package(SDL2 REQUIRED)
@@ -35,3 +36,10 @@ add_executable(hexray
 )
 target_link_libraries(hexray ${SDL2_LIBRARIES})
 set_property(TARGET hexray PROPERTY CXX_STANDARD 17)
+
+if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
+    # Set the startup project directly to be ready for running and debugging.
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT hexray)
+    # Set the PATH environment variable to include the SDL2 binary directory to load dependencies without manual copies.
+    set_target_properties(hexray PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=${SDL2_BINDIR};$ENV{PATH}")
+endif()
