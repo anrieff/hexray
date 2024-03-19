@@ -33,3 +33,6 @@
 
 # Build directory
 build/
+
+# VSCode setup/state files
+.vscode/
