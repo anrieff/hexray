@@ -34,4 +34,4 @@ add_executable(hexray
 	src/vector.h
 )
 target_link_libraries(hexray ${SDL2_LIBRARIES})
-set_property(TARGET hexray PROPERTY CXX_STANDARD 14)
+set_property(TARGET hexray PROPERTY CXX_STANDARD 17)
