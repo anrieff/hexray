@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
+project(heX-Ray CXX)
+
 # CMake project for hexray. It uses SDL2.
 # For Windows users: make sure you've unpacked your SDL in either
 #   - your user dir, subdir "develop\SDK", e.g. C:\Users\YOUR_USER\develop\SDK\SDL2-2.30.1
@@ -10,8 +12,11 @@ if (WIN32)
     if (CMAKE_GENERATOR STREQUAL "NMake Makefiles")
         message("If you get an error about 'nmake' missing, be sure to call CMake with -G 'MinGW Makefiles'")
     endif()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # Explicitly require standard conformance to ensure portability.
+        add_compile_options("/Zc:__cplusplus" "/permissive-")
+    endif()
 endif()
-project(heX-Ray)
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
