@@ -137,6 +137,12 @@ inline double distance(const Vector& a, const Vector& b)
 	);
 }
 
+inline Vector normalize(const Vector& v)
+{
+	double len = v.length();
+	if (fabs(len - 1.0) < 1e-6) return v;
+	return v * (1 / len);
+}
 
 struct Ray {
 	Vector start;
