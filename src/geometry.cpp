@@ -25,6 +25,7 @@
 
 #include "geometry.h"
 #include "util.h"
+#include <algorithm>
 
 bool Plane::intersect(Ray ray, IntersectionInfo& info)
 {
@@ -40,6 +41,7 @@ bool Plane::intersect(Ray ray, IntersectionInfo& info)
     info.norm.set(0, (ray.start.y > y) ? 1 : -1, 0);
     info.u = info.ip.x;
     info.v = info.ip.z;
+    info.geom = this;
     return true;
 }
 
@@ -66,7 +68,117 @@ bool Sphere::intersect(Ray ray, IntersectionInfo& info)
     info.ip = ray.start + ray.dir * p;
     info.norm = info.ip - O;
     info.norm.normalize();
-    info.v = toDegrees(asin(info.norm.y));
-    info.u = toDegrees(atan2(info.norm.x, info.norm.z));
+    info.v = asin(info.norm.y); // [-pi/2..+pi/2]
+    info.u = atan2(info.norm.z, info.norm.x); // [-pi..+pi]
+    info.v = -(info.v / PI + 0.5f); // [0..1]
+    info.u = info.u / (2*PI) + 0.5f; // [0..1]
+    info.geom = this;
     return true;
+}
+
+static inline bool inBounds(double x, double center, double halfSide)
+{
+    // example: Cube is in (2.0, 0.0, -1.0), side = 1
+    // X: cube is from  1.5 ..  2.5
+    // Y: cube is from -0.5 ..  0.5
+    // Z: cube is from -1.5 .. -0.5
+    // eg., for X we'll call inBounds(x, 2, 0.5)
+    return (x > center - halfSide - 1e-6 && x < center + halfSide + 1e-6);
+}
+
+int Cube::intersectCubeSide(
+            const Vector& norm,
+            double startCoord, // "A"
+            double dir,
+            double target,     // "B"
+            const Ray& ray,
+            IntersectionInfo& info,
+            std::function<void(IntersectionInfo&)> genUV)
+{
+    // startCoord + dir * p == target
+    if (dot(ray.dir, norm) > 0) return 0; // backface culling optimization
+    if (fabs(dir) < 1e-9) return 0;
+    if (startCoord < target && dir < 0) return 0;
+    if (startCoord > target && dir > 0) return 0;
+    //
+    double p = (target - startCoord) / dir;
+    if (p < info.dist) {
+        Vector ip = ray.start + ray.dir * p;
+        if (!inBounds(ip.x, O.x, m_halfSide)
+         || !inBounds(ip.y, O.y, m_halfSide)
+         || !inBounds(ip.z, O.z, m_halfSide)) return 0;
+        info.dist = p;
+        info.ip = ip;
+        info.norm = norm;
+        genUV(info);
+        info.geom = this;
+
+        return 1;
+    }
+    return 0;
+}
+
+bool Cube::intersect(Ray ray, IntersectionInfo& info)
+{
+    auto UV_X = [] (IntersectionInfo& info) { info.u = info.ip.y; info.v = info.ip.z; };
+    auto UV_Y = [] (IntersectionInfo& info) { info.u = info.ip.x; info.v = info.ip.z; };
+    auto UV_Z = [] (IntersectionInfo& info) { info.u = info.ip.x; info.v = info.ip.y; };
+    int numIntersections = 0;
+    //
+    // +-X:
+    info.dist = INF;
+    numIntersections += intersectCubeSide(Vector(-1, 0, 0), ray.start.x, ray.dir.x, O.x - m_halfSide, ray, info, UV_X);
+    numIntersections += intersectCubeSide(Vector(+1, 0, 0), ray.start.x, ray.dir.x, O.x + m_halfSide, ray, info, UV_X);
+    // +-Y:
+    numIntersections += intersectCubeSide(Vector( 0,-1, 0), ray.start.y, ray.dir.y, O.y - m_halfSide, ray, info, UV_Y);
+    numIntersections += intersectCubeSide(Vector( 0,+1, 0), ray.start.y, ray.dir.y, O.y + m_halfSide, ray, info, UV_Y);
+    // +-Z:
+    numIntersections += intersectCubeSide(Vector( 0, 0,-1), ray.start.z, ray.dir.z, O.z - m_halfSide, ray, info, UV_Z);
+    numIntersections += intersectCubeSide(Vector( 0, 0,+1), ray.start.z, ray.dir.z, O.z + m_halfSide, ray, info, UV_Z);
+    //
+    return numIntersections > 0;
+}
+
+std::vector<IntersectionInfo> findAllIntersections(Ray ray, Geometry* geom)
+{
+    std::vector<IntersectionInfo> result;
+    int counter = 30;
+    Vector origin = ray.start;
+    while (counter-- > 0) {
+        IntersectionInfo info;
+        if (!geom->intersect(ray, info)) break;
+        //
+        result.push_back(info);
+        ray.start = info.ip + ray.dir * 1e-6;
+    }
+    for (auto& info: result) info.dist = distance(origin, info.ip);
+    return result;
+}
+
+bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
+{
+    std::vector<IntersectionInfo> xLeft = findAllIntersections(ray, left);
+    std::vector<IntersectionInfo> xRight = findAllIntersections(ray, right);
+
+    std::vector<IntersectionInfo> allIntersections = xLeft;
+    for (auto& info: xRight) allIntersections.push_back(info);
+    //
+    std::sort(allIntersections.begin(), allIntersections.end(),
+        [] (const IntersectionInfo& left, const IntersectionInfo& right) -> bool {
+            return left.dist < right.dist;
+    });
+    //
+    bool inA = (xLeft.size() % 2);
+    bool inB = (xRight.size() % 2);
+    for (auto& infoCandidate: allIntersections) {
+        if (infoCandidate.geom == left) inA = !inA;
+        else                            inB = !inB;
+        if (inside(inA, inB)) {
+            info = infoCandidate;
+            info.norm = faceforward(ray.dir, info.norm);
+            info.geom = this;
+            return true;
+        }
+    }
+    return false;
 }

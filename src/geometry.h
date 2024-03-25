@@ -25,12 +25,16 @@
 #pragma once
 
 #include "vector.h"
+#include <functional>
+
+class Geometry;
 
 struct IntersectionInfo {
     double dist;
     Vector ip;
     Vector norm;
     double u, v;
+    Geometry *geom;
 };
 
 class Geometry {
@@ -51,4 +55,51 @@ public:
     double R;
     Sphere(Vector O = Vector(0, 0, 0), double R = 1): O(O), R(R) {}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+};
+
+class Cube: public Geometry {
+    double m_halfSide;
+    int intersectCubeSide(
+        const Vector& norm,
+        double startCoord,
+        double dir,
+        double target,
+        const Ray& ray,
+        IntersectionInfo& info,
+        std::function<void(IntersectionInfo&)> genUV
+        );
+public:
+    Vector O;
+    double side;
+    Cube(Vector O = Vector(0, 0, 0), double side = 1): O(O), side(side)
+    {
+        m_halfSide = side * 0.5;
+    }
+    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+};
+
+class CSGBase: public Geometry {
+    Geometry* left, *right;
+public:
+    CSGBase(Geometry* l, Geometry *r): left(l), right(r) {}
+    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+    virtual bool inside(bool inA, bool inB) = 0;
+};
+
+class CSGUnion: public CSGBase {
+public:
+    CSGUnion(Geometry* l, Geometry *r): CSGBase(l, r) {}
+    virtual bool inside(bool inA, bool inB) override { return inA || inB; }
+};
+
+class CSGInter: public CSGBase {
+public:
+    CSGInter(Geometry* l, Geometry *r): CSGBase(l, r) {}
+    virtual bool inside(bool inA, bool inB) override { return inA && inB; }
+};
+
+class CSGDiff: public CSGBase { // A - B
+public:
+    CSGDiff(Geometry* l, Geometry *r): CSGBase(l, r) {}
+    virtual bool inside(bool inA, bool inB) override { return inA && !inB; }
 };

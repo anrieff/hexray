@@ -149,3 +149,13 @@ struct Ray {
 	Vector start;
 	Vector dir; // ! unit vector!
 };
+
+inline Vector faceforward(const Vector& ray, const Vector& n)
+{
+	return (dot(ray, n) < 0) ? n : -n; 
+}
+
+inline Vector reflect(const Vector& i, const Vector& n)
+{
+	return 2 * dot(-i, n) * n + i;
+}

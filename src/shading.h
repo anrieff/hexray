@@ -27,6 +27,7 @@
 #include "color.h"
 #include "vector.h"
 #include "geometry.h"
+#include "bitmap.h"
 
 extern Vector lightPos;
 extern Color lightColor;
@@ -38,20 +39,55 @@ public:
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
 };
 
+class Texture {
+public:
+    virtual Color sample(const IntersectionInfo& info) = 0;
+};
+
+class CheckerTexture: public Texture {
+public:
+    Color col1, col2;
+    float scaling;
+    CheckerTexture(const Color& c1 = Color(1, 1, 1), const Color& c2 = Color(0, 0, 0), float scaling = 20): col1(c1), col2(c2), scaling(scaling) {}
+    virtual Color sample(const IntersectionInfo& info) override;
+};
+
+class BitmapTexture: public Texture {
+    Bitmap m_bitmap;
+public:
+    float scaling;
+    BitmapTexture(const char* filename, float scaling = 100.0f);
+    virtual Color sample(const IntersectionInfo& info) override;
+};
+
 class ConstantShader: public Shader {
 public:
     Color color;
     ConstantShader(Color col = Color(0.5, 0.5, 0.5)): color(col) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 };
+//    float scaling = 20.0f;
 
-class Checker: public Shader {
+class Lambert: public Shader {
 public:
-    Color col1, col2;
-    float scaling = 20.0f;
-    Checker(
-        Color col1 = Color(0.5, 0.5, 0.5),
-        Color col2 = Color(0.1, 0.1, 0.8),
-        float scaling = 20.0f): col1(col1), col2(col2), scaling(scaling) {}
+    Color diffuse;
+    Texture* diffuseTex = nullptr;
+    Lambert(
+        Color color = Color(0.5, 0.5, 0.5),
+        Texture* tex = nullptr
+        ): diffuse(color), diffuseTex(tex) {}
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Phong: public Shader {
+public:
+    Color diffuse, specular;
+    float specularExponent;
+    Texture* diffuseTex;
+    Phong(
+        Color color = Color(0.5, 0.5, 0.5),
+        Color spec = Color(1, 1, 1),
+        float specularExponent = 10.0,
+        Texture* diffuseTex = nullptr);
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 };

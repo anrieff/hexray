@@ -45,16 +45,21 @@ struct Node {
 std::vector<Node> nodes;
 
 Sphere sphere(Vector(-10, 60, 0), 30);
-
+//Sphere sphere(Vector(5, 75, -15), 10);
 void setupScene()
 {
 	camera.pos.set(0, 60, -120);
 	camera.beginFrame();
-	nodes.push_back(Node{ new Plane(15), new Checker(Color(0, 0, 0.8), Color(0.2, 0.3, 0.6))});
-	nodes.push_back(Node{ &sphere, new Checker(Color(0.8, 0, 0), Color(0.6, 0.4, 0.1), 9)});
+	Texture* floor  = new BitmapTexture("../data/floor.bmp");
+	Texture* world  = new BitmapTexture("../data/world.bmp", 1);
+	Phong* phong = new Phong(Color(0.6, 0.4, 0.1), Color(1, 1, 1), 120.0f, world);
+	nodes.push_back(Node{ new Plane(15), new Lambert(Color(0, 0, 0.8), floor)});
+	nodes.push_back(Node{ &sphere, phong});
+	/*nodes.push_back(Node{ &sphere, phong});*/
+	//nodes.push_back(Node{ new CSGDiff(&cube, &sphere), phong});
 	lightPos.set(+30, +100, -70);
 	lightColor.setColor(1, 1, 1);
-	lightIntensity = 10000.0;
+	lightIntensity = 5000.0;
 }
 
 Color raytrace(Ray ray)
@@ -104,14 +109,20 @@ void render()
 
 int main(int argc, char** argv)
 {
-	initGraphics(800, 600);
+	initGraphics(1024, 768);
 	setupScene();
-//	for (double y = 60; y >= -30; y -= 1.5) {
+	Uint32 start = SDL_GetTicks();
+	for (double angle = 0; angle < 360; angle += 10) {
 //		sphere.O.y = y;
+		double a_rad = toRadians(angle);
+		camera.pos = Vector(sin(a_rad) * 120, 85, -cos(a_rad) * 120);
+		camera.yaw = angle;
 		camera.beginFrame();
 		render();
 		displayVFB(vfb);
-//	}
+	}
+	Uint32 end = SDL_GetTicks();
+	printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
 	waitForUserExit();
 	closeGraphics();
 	printf("Exited cleanly\n");
