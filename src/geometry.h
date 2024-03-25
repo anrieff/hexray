@@ -53,6 +53,7 @@ class Sphere: public Geometry {
 public:
     Vector O;
     double R;
+    double uvscaling = 1;
     Sphere(Vector O = Vector(0, 0, 0), double R = 1): O(O), R(R) {}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
 };

@@ -72,6 +72,10 @@ bool Sphere::intersect(Ray ray, IntersectionInfo& info)
     info.u = atan2(info.norm.z, info.norm.x); // [-pi..+pi]
     info.v = -(info.v / PI + 0.5f); // [0..1]
     info.u = info.u / (2*PI) + 0.5f; // [0..1]
+    if (uvscaling != 1) {
+        info.u *= uvscaling;
+        info.v *= uvscaling;
+    }
     info.geom = this;
     return true;
 }
@@ -96,7 +100,6 @@ int Cube::intersectCubeSide(
             std::function<void(IntersectionInfo&)> genUV)
 {
     // startCoord + dir * p == target
-    if (dot(ray.dir, norm) > 0) return 0; // backface culling optimization
     if (fabs(dir) < 1e-9) return 0;
     if (startCoord < target && dir < 0) return 0;
     if (startCoord > target && dir > 0) return 0;
@@ -146,6 +149,7 @@ std::vector<IntersectionInfo> findAllIntersections(Ray ray, Geometry* geom)
     Vector origin = ray.start;
     while (counter-- > 0) {
         IntersectionInfo info;
+        info.dist = INF;
         if (!geom->intersect(ray, info)) break;
         //
         result.push_back(info);
