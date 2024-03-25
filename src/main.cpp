@@ -21,8 +21,9 @@
  * @File main.cpp
  * @Brief Raytracer main file
  */
-#include <SDL.h>
+//#include <SDL.h>
 #include <math.h>
+#include <stdio.h>
 #include "util.h"
 #include "sdl.h"
 #include "color.h"
@@ -30,6 +31,7 @@
 #include "camera.h"
 #include "geometry.h"
 #include "shading.h"
+#include "matrix.h"
 #include <vector>
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
@@ -101,18 +103,30 @@ void render()
 		}
 }
 
-int main(int argc, char** argv)
+void printVec(const Vector& v)
 {
-	initGraphics(800, 600);
-	setupScene();
-//	for (double y = 60; y >= -30; y -= 1.5) {
-//		sphere.O.y = y;
-		camera.beginFrame();
-		render();
-		displayVFB(vfb);
-//	}
-	waitForUserExit();
-	closeGraphics();
-	printf("Exited cleanly\n");
+	printf(" (%6.3f, %6.3f, %6.3f) ", v.x, v.y, v.z);
+}
+
+int main(void)
+{
+	const double N = 10;
+	Vector a(0.9372438, -0.2811731, 0.2061936);
+	Vector b = a;
+	Matrix m = rotationAroundY(toRadians(360.0 / N));
+	printf("Iter b                        dot(a, b) a^b                       len(a^b) norm(a^b)                dot(a, nc) dot(b, nc)\n");
+	for (int i = 1; i <= int(N); i++) {
+		b *= m; // rotate by 1/N turn around Y
+		Vector c = a^b;
+		Vector nc = c;
+		nc.normalize();
+		printf("%4d", i);
+		printVec(b);
+		printf("%8.5f", dot(a, b));
+		printVec(c);
+		printf("  %.5f", c.length());
+		printVec(nc);
+		printf(" %9.6f  %9.6f\n", dot(a, nc), dot(b, nc));
+	}
 	return 0;
 }
