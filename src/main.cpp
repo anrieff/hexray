@@ -24,6 +24,8 @@
  */
 #include <SDL.h>
 #include <math.h>
+#include <assert.h>
+#include <vector>
 #include "util.h"
 #include "sdl.h"
 #include "color.h"
@@ -31,7 +33,6 @@
 #include "camera.h"
 #include "geometry.h"
 #include "shading.h"
-#include <vector>
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 Camera camera;
@@ -42,22 +43,69 @@ struct Node {
 	Shader* shader;
 };
 
+void addToUnion(Geometry*& csg, Geometry* toAdd)
+{
+	if (!csg) csg = toAdd;
+	else      csg = new CSGUnion(csg, toAdd);
+}
+
 std::vector<Node> nodes;
-Vector csgCenter(-10, 60, 0);
-Cube cube(csgCenter, 30);
-Sphere sphere(csgCenter, 20);
+
+Geometry* createRoundedEdgesCube(Vector center, double side, double cornerRadius)
+{
+	Geometry* allCornerCubes = nullptr;
+	Geometry* allCornerSpheres = nullptr;
+	double offset = side/2 - cornerRadius;
+	assert(offset >= 0);
+	double eps = side / 100;
+	// the big cube is just a cube with the given center and side:
+	Cube* bigCube = new Cube(center, side);
+	// iterate all 8 corners of the big cube:
+	for (int dz = -1; dz <= 1; dz += 2) {
+		for (int dy = -1; dy <= 1; dy += 2) {
+			for (int dx = -1; dx <= 1; dx += 2) {
+				Cube* smallCube = new Cube(center + Vector(dx, dy, dz) * (offset + cornerRadius/2 + eps), cornerRadius + 2*eps);
+				Sphere* smallSphere = new Sphere(center + Vector(dx, dy, dz) * offset, cornerRadius*sqrt(2.0));
+				addToUnion(allCornerCubes, smallCube);
+				addToUnion(allCornerSpheres, smallSphere);
+			}
+		}
+	}
+	CSGBase* cubeWithoutCorners = new CSGDiff(bigCube, allCornerCubes);
+	CSGBase* roundedCube = new CSGUnion(cubeWithoutCorners, new CSGInter(bigCube, allCornerSpheres));
+	return roundedCube;
+}
+
+Vector csgCenter(-50, 20, 15);
+Cube cube(csgCenter, 40);
+Sphere sphere(csgCenter, 26);
 void setupScene()
 {
 	camera.pos.set(0, 60, -120);
+	camera.pitch = -10;
 	camera.beginFrame();
 	sphere.uvscaling = 50;
+	// Create the floor:
 	Texture* floor  = new BitmapTexture("../data/floor.bmp");
-	Texture* world  = new BitmapTexture("../data/world.bmp", 1);
+	nodes.push_back(Node{ new Plane(0), new Lambert(Color(0, 0, 0.8), floor)});
+	// Create a globe with the world map:
+	Phong* globeMat = new Phong;
+	globeMat->specularExponent = 120.0f;
+	globeMat->diffuseTex = new BitmapTexture("../data/world.bmp", 1);
+	nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), globeMat});
+	// Create a CSG object: a cube with a cut out sphere in the middle
 	Texture* checker = new CheckerTexture(Color(0x8d3d3d), Color(0x9c9c9c), 5);
 	Phong* phong = new Phong(Color(0.6, 0.4, 0.1), Color(1, 1, 1), 120.0f, checker);
-	nodes.push_back(Node{ new Plane(15), new Lambert(Color(0, 0, 0.8), floor)});
-	//nodes.push_back(Node{ &sphere, phong});
 	nodes.push_back(Node{ new CSGDiff(&cube, &sphere), phong});
+	// Create a complex CSG object: cube with rounded edges:
+	nodes.push_back(Node{ createRoundedEdgesCube(Vector(0, 20, 15), 40, 10),
+	                      new Phong(Color(0.9, 0.4, 0.1), Color(1, 1, 1), 125.0f)});
+	/*
+	nodes.push_back(Node{ createRoundedEdgesCube(Vector(0, 10, -15), 20, 8),
+	                      new Phong(Color(0.1, 0.4, 0.9), Color(1, 1, 1), 125.0f)});
+	nodes.push_back(Node{ createRoundedEdgesCube(Vector(0, 40, 100), 80, 10),
+	                      new Phong(Color(0.4, 0.9, 0.1), Color(1, 1, 1), 125.0f)});
+	*/
 	lightPos.set(+30, +100, -70);
 	lightColor.setColor(1, 1, 1);
 	lightIntensity = 10000.0;
@@ -114,9 +162,8 @@ int main(int argc, char** argv)
 	setupScene();
 	Uint32 start = SDL_GetTicks();
 	for (double angle = 0; angle < 360; angle += 30) {
-//		sphere.O.y = y;
 		double a_rad = toRadians(angle);
-		camera.pos = Vector(sin(a_rad) * 120, 85, -cos(a_rad) * 120);
+		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
 		camera.yaw = angle;
 		camera.beginFrame();
 		render();

@@ -145,9 +145,10 @@ bool Cube::intersect(Ray ray, IntersectionInfo& info)
 std::vector<IntersectionInfo> findAllIntersections(Ray ray, Geometry* geom)
 {
     std::vector<IntersectionInfo> result;
-    int counter = 30;
     Vector origin = ray.start;
-    while (counter-- > 0) {
+    // doing a for loop just to ensure we eventually terminate. Typically though,
+    // the loop will terminate after 1-2 iterations due to the geom->intersect() break.
+    for (int counter = 0; counter < 30; counter++) {
         IntersectionInfo info;
         info.dist = INF;
         if (!geom->intersect(ray, info)) break;
@@ -165,7 +166,7 @@ bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
     std::vector<IntersectionInfo> xRight = findAllIntersections(ray, right);
 
     std::vector<IntersectionInfo> allIntersections = xLeft;
-    for (auto& info: xRight) allIntersections.push_back(info);
+    allIntersections.insert(allIntersections.end(), xRight.cbegin(), xRight.cend());
     //
     std::sort(allIntersections.begin(), allIntersections.end(),
         [] (const IntersectionInfo& left, const IntersectionInfo& right) -> bool {
@@ -174,10 +175,11 @@ bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
     //
     bool inA = (xLeft.size() % 2);
     bool inB = (xRight.size() % 2);
+    bool initial = inside(inA, inB);
     for (auto& infoCandidate: allIntersections) {
         if (infoCandidate.geom == left) inA = !inA;
         else                            inB = !inB;
-        if (inside(inA, inB)) {
+        if (inside(inA, inB) != initial) {
             info = infoCandidate;
             info.norm = faceforward(ray.dir, info.norm);
             info.geom = this;
