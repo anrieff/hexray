@@ -44,7 +44,7 @@ bool initGraphics(int frameWidth, int frameHeight)
 		printf("Window could not be created: %s\n", SDL_GetError());
 		return false;
 	}
-	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+	//SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 	screen = SDL_GetWindowSurface(window);
 	if (!screen) {
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
@@ -73,31 +73,47 @@ void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 	SDL_UpdateWindowSurface(window);
 }
 
-/// waits the user to indicate he wants to close the application (by either clicking on the "X" of the window,
+static bool isExitEvent(SDL_Event& ev)
+{
+	return (ev.type == SDL_QUIT || (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE));
+}
+
+static bool isWindowRedrawEvent(SDL_Event& ev)
+{
+	const Uint32 WINDOW_DAMAGED_EVENTS[] = {
+		SDL_WINDOWEVENT_SHOWN, SDL_WINDOWEVENT_EXPOSED, SDL_WINDOWEVENT_MAXIMIZED, SDL_WINDOWEVENT_RESTORED
+	};
+	for (auto& id: WINDOW_DAMAGED_EVENTS) if (ev.window.event == id) return true;
+	return false;
+}
+
+/// waits the user to indicate he/she wants to close the application (by either clicking on the "X" of the window,
 /// or by pressing ESC)
 void waitForUserExit(void)
 {
 	SDL_Event ev;
 	while (1) {
 		while (SDL_WaitEvent(&ev)) {
-			switch (ev.type) {
-				case SDL_QUIT:
-					return;
-				case SDL_KEYDOWN:
-				{
-					switch (ev.key.keysym.sym) {
-						case SDLK_ESCAPE:
-							return;
-						default:
-							break;
-					}
-				}
-				default:
-					break;
-			}
+			if (isExitEvent(ev)) return;
+			if (isWindowRedrawEvent(ev)) SDL_UpdateWindowSurface(window);
 		}
 	}
 }
+
+/// checks if the user indicated he/she wants to close the application (by either clicking on the "X" of the window,
+/// or by pressing ESC)
+bool checkForUserExit(void)
+{
+	SDL_Event ev;
+	bool windowDirty = false;
+	while (SDL_PollEvent(&ev)) {
+		if (isExitEvent(ev)) return true;
+		if (isWindowRedrawEvent(ev)) windowDirty = true;
+	}
+	if (windowDirty) SDL_UpdateWindowSurface(window);
+	return false;
+}
+
 
 /// returns the frame width
 int frameWidth(void)

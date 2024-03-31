@@ -161,17 +161,24 @@ int main(int argc, char** argv)
 	initGraphics(800, 600);
 	setupScene();
 	Uint32 start = SDL_GetTicks();
-	for (double angle = 0; angle < 360; angle += 30) {
+	bool shouldExit = false;
+	for (double angle = 0; angle < 360 && !shouldExit; angle += 30) {
 		double a_rad = toRadians(angle);
 		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
 		camera.yaw = angle;
 		camera.beginFrame();
 		render();
 		displayVFB(vfb);
+		if (checkForUserExit()) {
+			printf("Exited early.\n");
+			shouldExit = true;
+		}
 	}
-	Uint32 end = SDL_GetTicks();
-	printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
-	waitForUserExit();
+	if (!shouldExit) {
+		Uint32 end = SDL_GetTicks();
+		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
+		waitForUserExit();
+	}
 	closeGraphics();
 	printf("Exited cleanly\n");
 	return 0;
