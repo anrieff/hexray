@@ -25,7 +25,9 @@
 #include <SDL.h>
 #include <math.h>
 #include <assert.h>
+#include <stdlib.h>
 #include <vector>
+#include <filesystem>
 #include "util.h"
 #include "sdl.h"
 #include "color.h"
@@ -86,12 +88,12 @@ void setupScene()
 	camera.beginFrame();
 	sphere.uvscaling = 50;
 	// Create the floor:
-	Texture* floor  = new BitmapTexture("../data/floor.bmp");
+	Texture* floor  = new BitmapTexture("data/floor.bmp");
 	nodes.push_back(Node{ new Plane(0), new Lambert(Color(0, 0, 0.8), floor)});
 	// Create a globe with the world map:
 	Phong* globeMat = new Phong;
 	globeMat->specularExponent = 120.0f;
-	globeMat->diffuseTex = new BitmapTexture("../data/world.bmp", 1);
+	globeMat->diffuseTex = new BitmapTexture("data/world.bmp", 1);
 	nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), globeMat});
 	// Create a CSG object: a cube with a cut out sphere in the middle
 	Texture* checker = new CheckerTexture(Color(0x8d3d3d), Color(0x9c9c9c), 5);
@@ -156,8 +158,24 @@ void render()
 		}
 }
 
+// makes sure we see the "data" dir:
+static void ensureDataIsVisible()
+{
+	namespace fs = std::filesystem;
+	// handle the common case where we launch "hexray" from within "hexray/build"
+	if (!fs::exists("data") && fs::exists("../data"))
+		fs::current_path("..");
+	// otherwise, we can't continue:
+	if (!fs::exists("data")) {
+		printf("Error: the \"data\" directory is not visible!\n");
+		printf("(make sure you run hexray from the correct directory; either \"hexray\" or \"hexray/build\")\n");
+		exit(1);
+	}
+}
+
 int main(int argc, char** argv)
 {
+	ensureDataIsVisible();
 	initGraphics(800, 600);
 	setupScene();
 	Uint32 start = SDL_GetTicks();

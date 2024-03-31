@@ -41,7 +41,7 @@ add_executable(hexray
 	src/util.h
 	src/vector.h
 )
-target_link_libraries(hexray ${SDL2_LIBRARIES})
+target_link_libraries(hexray ${SDL2_LIBRARIES} stdc++fs)
 set_property(TARGET hexray PROPERTY CXX_STANDARD 17)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
