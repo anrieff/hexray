@@ -166,11 +166,12 @@ inline Vector normalize(const Vector& v)
 struct Ray {
 	Vector start;
 	Vector dir; // ! unit vector!
+	int depth = 0;
 };
 
 inline Vector faceforward(const Vector& ray, const Vector& n)
 {
-	return (dot(ray, n) < 0) ? n : -n; 
+	return (dot(ray, n) < 0) ? n : -n;
 }
 
 inline Vector reflect(const Vector& i, const Vector& n)

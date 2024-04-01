@@ -29,6 +29,8 @@ add_executable(hexray
 	src/camera.h
 	src/color.h
 	src/constants.h
+	src/environment.cpp
+	src/environment.h
 	src/geometry.cpp
 	src/geometry.h
 	src/main.cpp

@@ -36,7 +36,7 @@ Color ConstantShader::computeColor(Ray ray, const IntersectionInfo& info)
     return color;
 }
 
-Color CheckerTexture::sample(const IntersectionInfo& info)
+Color CheckerTexture::sample(Ray ray, const IntersectionInfo& info)
 {
     int u1 = int(floor(info.u / scaling));
     int v1 = int(floor(info.v / scaling));
@@ -58,7 +58,7 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
     double distSqr;
     float lambertTerm = getLambertTerm(info, distSqr);
     //
-    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(info) : this->diffuse;
+    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
     //
     Color direct;
     if (visible(lightPos, info.ip))
@@ -77,7 +77,7 @@ Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
     double distSqr;
     float lambertTerm = getLambertTerm(info, distSqr);
     //
-    Color diffuseColor = this->diffuseTex ? this->diffuseTex->sample(info) : this->diffuse;
+    Color diffuseColor = this->diffuseTex ? this->diffuseTex->sample(ray, info) : this->diffuse;
     Color result = diffuseColor * AMBIENT_LIGHT;
     if (visible(lightPos, info.ip)) {
         result += diffuseColor * lightColor * (lambertTerm * lightIntensity / distSqr);
@@ -99,7 +99,7 @@ BitmapTexture::BitmapTexture(const char* filename, float scaling)
     m_bitmap.loadBMP(filename);
     this->scaling = scaling;
 }
-Color BitmapTexture::sample(const IntersectionInfo& info)
+Color BitmapTexture::sample(Ray ray, const IntersectionInfo& info)
 {
     float u = (info.u / scaling);
     float v = (info.v / scaling);
@@ -109,4 +109,75 @@ Color BitmapTexture::sample(const IntersectionInfo& info)
     u *= m_bitmap.getWidth();
     v *= m_bitmap.getHeight();
     return m_bitmap.getPixel(int(u), int(v));
+}
+
+Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)
+{
+    Vector n = faceforward(ray.dir, info.norm);
+    Ray newRay = ray;
+    newRay.start = info.ip + n * 1e-6;
+    newRay.dir = reflect(ray.dir, n);
+    newRay.depth = ray.depth + 1;
+    return raytrace(newRay) * reflColor; // account for attenuation
+}
+
+inline std::optional<Vector> refract(const Vector& i, const Vector& n, float ior)
+{
+    float NdotI = dot(i, n);
+    float k = 1 - (ior * ior) * (1 - NdotI * NdotI);
+    if (k < 0) return {};
+    return ior * i - (ior * NdotI + sqrt(k)) * n;
+}
+
+Color Refraction::computeColor(Ray ray, const IntersectionInfo& info)
+{
+	std::optional<Vector> refr;
+	if (dot(ray.dir, info.norm) < 0) {
+		// entering the geometry
+		refr = refract(ray.dir, info.norm, 1 / ior);
+	} else {
+		// leaving the geometry
+		refr = refract(ray.dir, -info.norm, ior);
+	}
+	if (!refr) return Color(0, 0, 0);
+	Ray newRay = ray;
+	newRay.start = info.ip - faceforward(ray.dir, info.norm) * 0.000001;
+	newRay.dir = refr.value();
+	newRay.depth++;
+	return raytrace(newRay) * refrColor;
+}
+
+void Layered::addLayer(Shader* shader, Color blend, Texture* blendTex)
+{
+    m_layers.emplace_back(Layer{shader, blend, blendTex});
+}
+
+Color Layered::computeColor(Ray ray, const IntersectionInfo& info)
+{
+    Color col(0, 0, 0);
+    for (auto& layer: m_layers) {
+        Color blend = layer.blendTex ? layer.blendTex->sample(ray, info) : layer.blend;
+        Color fromShader = layer.shader->computeColor(ray, info);
+        col = col * (Color(1, 1, 1) - blend) + fromShader * blend;
+    }
+    return col;
+}
+
+inline float fresnelSchlickApprox(float NdotI, float ior)
+{
+    float f = sqr((1.0f - ior) / (1.0f + ior));
+    float x = 1 - NdotI;
+    return f + (1 - f) * pow(x, 5.0f);
+}
+
+Color Fresnel::sample(Ray ray, const IntersectionInfo& info)
+{
+    float eta = ior;
+    float NdotI = dot(ray.dir, info.norm);
+    if (NdotI > 0)
+        eta = 1/eta;
+    else
+        NdotI = -NdotI;
+    float fr = fresnelSchlickApprox(NdotI, eta);
+    return Color(fr, fr, fr);
 }

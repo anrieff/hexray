@@ -75,6 +75,9 @@ public:
     double side;
     Cube(Vector O = Vector(0, 0, 0), double side = 1): O(O), side(side)
     {
+    }
+    void beginFrame()
+    {
         m_halfSide = side * 0.5;
     }
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;

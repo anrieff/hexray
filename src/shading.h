@@ -41,7 +41,7 @@ public:
 
 class Texture {
 public:
-    virtual Color sample(const IntersectionInfo& info) = 0;
+    virtual Color sample(Ray ray, const IntersectionInfo& info) = 0;
 };
 
 class CheckerTexture: public Texture {
@@ -49,7 +49,7 @@ public:
     Color col1, col2;
     float scaling;
     CheckerTexture(const Color& c1 = Color(1, 1, 1), const Color& c2 = Color(0, 0, 0), float scaling = 20): col1(c1), col2(c2), scaling(scaling) {}
-    virtual Color sample(const IntersectionInfo& info) override;
+    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
 };
 
 class BitmapTexture: public Texture {
@@ -57,7 +57,7 @@ class BitmapTexture: public Texture {
 public:
     float scaling;
     BitmapTexture(const char* filename, float scaling = 100.0f);
-    virtual Color sample(const IntersectionInfo& info) override;
+    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
 };
 
 class ConstantShader: public Shader {
@@ -90,4 +90,35 @@ public:
         float specularExponent = 10.0,
         Texture* diffuseTex = nullptr);
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Reflection: public Shader {
+public:
+    Color reflColor = Color(0.95f, 0.95f, 0.95f);
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Refraction: public Shader {
+public:
+    Color refrColor = Color(0.95f, 0.95f, 0.95f);
+    float ior = 1.33;
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Layered: public Shader {
+    struct Layer {
+        Shader* shader;
+        Color blend;
+        Texture* blendTex;
+    };
+    std::vector<Layer> m_layers;
+public:
+    void addLayer(Shader* shader, Color blend = Color(1, 1, 1), Texture* blendTex = nullptr);
+    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+};
+
+class Fresnel: public Texture {
+public:
+    float ior = 1.33;
+    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
 };

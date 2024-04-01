@@ -19,10 +19,44 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File main.h
- * @Brief Raytracer main file
+ * @File environment.h
+ * @Brief declarations of the Environment classes
  */
 #pragma once
 
-bool visible(Vector A, Vector B);
-Color raytrace(Ray ray);
+#include <array>
+#include "color.h"
+#include "vector.h"
+#include "bitmap.h"
+
+enum CubeOrder {
+	NEGX, // 0
+	NEGY, // 1
+	NEGZ, // 2
+	POSX, // 3
+	POSY, // 4
+	POSZ, // 5
+};
+
+class Environment {
+public:
+	bool loaded = false;
+	virtual ~Environment() {}
+	/// gets a color from the environment at the specified direction
+	virtual Color getEnvironment(const Vector& dir) = 0;
+};
+
+class CubemapEnvironment: public Environment {
+	std::array<Bitmap, 6> m_sides;
+	Color getSide(const Bitmap& bmp, double x, double y);
+public:
+ 	/// loads a cubemap from 6 separate images, from the specified folder.
+ 	/// The images have to be named "posx.bmp", "negx.bmp", "posy.bmp", ...
+ 	/// (or they may be .exr images, not .bmp).
+ 	/// The folder specification shouldn't include a trailing slash;
+ 	/// e.g. "/images/cubemaps/cathedral" is OK.
+	bool loadMaps(const char* folder);
+	CubemapEnvironment(const char* folder);
+
+	virtual Color getEnvironment(const Vector& dir) override;
+};
