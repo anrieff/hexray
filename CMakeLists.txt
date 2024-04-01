@@ -19,6 +19,7 @@ if (WIN32)
 endif()
 
 find_package(SDL2 REQUIRED)
+find_package(OpenEXR REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
 add_executable(hexray
@@ -38,13 +39,14 @@ add_executable(hexray
 	src/sdl.h
 	src/shading.cpp
 	src/shading.h
+	src/util.cpp
 	src/util.h
 	src/vector.h
 )
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	target_link_libraries(hexray stdc++fs)
 endif()
-target_link_libraries(hexray ${SDL2_LIBRARIES})
+target_link_libraries(hexray ${SDL2_LIBRARIES} OpenEXR::OpenEXR)
 
 set_property(TARGET hexray PROPERTY CXX_STANDARD 17)
 

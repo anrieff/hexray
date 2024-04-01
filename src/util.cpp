@@ -19,24 +19,31 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File util.h
+ * @File util.cpp
  * @Brief a few useful short functions
  */
-#pragma once
 
-#include <stdlib.h>
-#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include "util.h"
+
 #include <string>
-#include "constants.h"
+#include <chrono>
+using namespace std;
 
-inline double signOf(double x) { return x > 0 ? +1 : -1; }
-inline double sqr(double a) { return a * a; }
-inline double toRadians(double angle) { return angle / 180.0 * PI; }
-inline double toDegrees(double angle_rad) { return angle_rad / PI * 180.0; }
-inline int nearestInt(float x) { return (int) floor(x + 0.5f); }
+string extensionUpper(const char* fileName)
+{
+	int l = (int) strlen(fileName);
+	if (l < 2) return "";
 
-std::string extensionUpper(const char* fileName); //!< Given a filename, return its extension in UPPERCASE
-
-/// returns a random floating-point number in [0..1).
-/// This is not a very good implementation. A better method is to be employed soon.
-inline float randomFloat() { return rand() / (float) RAND_MAX; }
+	for (int i = l - 1; i >= 0; i--) {
+		if (fileName[i] == '.') {
+			string result = "";
+			for  (int j = i + 1; j < l; j++) result += toupper(fileName[j]);
+			return result;
+		}
+	}
+	return "";
+}

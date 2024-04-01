@@ -38,6 +38,7 @@ bool Plane::intersect(Ray ray, IntersectionInfo& info)
     double m = toGo / going;
     info.dist = m;
     info.ip = ray.start + ray.dir * m;
+    if (fabs(info.ip.x) > limit || fabs(info.ip.z) > limit) return false;
     info.norm.set(0, (ray.start.y > y) ? 1 : -1, 0);
     info.u = info.ip.x;
     info.v = info.ip.z;

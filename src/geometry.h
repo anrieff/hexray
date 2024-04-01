@@ -45,6 +45,7 @@ public:
 class Plane: public Geometry {
 public:
     double y;
+    double limit = 100;
     Plane(double y): y(y) {}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
 };

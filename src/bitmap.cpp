@@ -27,6 +27,9 @@
 #include "color.h"
 #include "constants.h"
 #include "bitmap.h"
+#include <ImfRgbaFile.h>
+#include <ImfArray.h>
+#include <Iex.h>
 
 Bitmap::Bitmap()
 {
@@ -215,4 +218,66 @@ bool Bitmap::saveBMP(const char* filename)
 	}
 	fclose(fp);
 	return true;
+}
+
+bool Bitmap::loadEXR(const char* filename)
+{
+	try {
+		Imf::RgbaInputFile exr(filename);
+		Imf::Array2D<Imf::Rgba> pixels;
+		Imath::Box2i dw = exr.dataWindow();
+		m_width  = dw.max.x - dw.min.x + 1;
+		m_height = dw.max.y - dw.min.y + 1;
+		pixels.resizeErase(m_height, m_width);
+		exr.setFrameBuffer(&pixels[0][0] - dw.min.x - dw.min.y * m_width, 1, m_width);
+		exr.readPixels(dw.min.y, dw.max.y);
+		m_data.resize(m_width * m_height);
+		for (int y = 0; y < m_height; y++)
+			for (int x = 0; x < m_width; x++) {
+				Color& pixel = m_data[y * m_width + x];
+				pixel.r = pixels[y + dw.min.y][x + dw.min.x].r;
+				pixel.g = pixels[y + dw.min.y][x + dw.min.x].g;
+				pixel.b = pixels[y + dw.min.y][x + dw.min.x].b;
+			}
+		return true;
+	}
+	catch (Iex::BaseExc ex) {
+		m_width = m_height = 0;
+		m_data.clear();
+		return false;
+	}
+}
+
+bool Bitmap::saveEXR(const char* filename)
+{
+	try {
+		Imf::RgbaOutputFile file(filename, m_width, m_height, Imf::WRITE_RGBA);
+		std::vector<Imf::Rgba> temp(m_width * m_height);
+		for (int i = 0; i < m_width * m_height; i++) {
+			temp[i].r = m_data[i].r;
+			temp[i].g = m_data[i].g;
+			temp[i].b = m_data[i].b;
+			temp[i].a = 1.0f;
+		}
+		file.setFrameBuffer(&temp[0], 1, m_width);
+		file.writePixels(m_height);
+	}
+	catch (Iex::BaseExc ex) {
+		return false;
+	}
+	return true;
+}
+
+bool Bitmap::loadImage(const char* filename)
+{
+	if (extensionUpper(filename) == "BMP") return loadBMP(filename);
+	if (extensionUpper(filename) == "EXR") return loadEXR(filename);
+	return false;
+}
+
+bool Bitmap::saveImage(const char* filename)
+{
+	if (extensionUpper(filename) == "BMP") return saveBMP(filename);
+	if (extensionUpper(filename) == "EXR") return saveEXR(filename);
+	return false;
 }
