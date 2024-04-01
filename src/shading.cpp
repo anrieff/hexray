@@ -26,6 +26,8 @@
 #include "shading.h"
 #include "main.h"
 
+#include <optional>
+
 Vector lightPos;
 Color lightColor;
 float lightIntensity;

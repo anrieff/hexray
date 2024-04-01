@@ -13,8 +13,9 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
 2. Download the libSDL2 development package for MinGW from [here](https://github.com/libsdl-org/SDL/releases/).
     - E.g., use [SDL2-devel-2.30.1-mingw.zip](https://github.com/libsdl-org/SDL/releases/download/release-2.30.1/SDL2-devel-2.30.1-mingw.zip)
 3. Install CMake — any version later than 3.7 is OK.
-4. Make a "SDK" directory, either in a "develop" subfolder in your user directory (e.g. `C:\Users\«USERNAME»\develop\SDK`) or in `C:\`
+4. Make a "SDK" directory, either in a "develop" subfolder in your user directory (e.g. `C:\Users\«USERNAME»\develop`) or in `C:\`
 5. Unarchive the SDL2-devel there, e.g. so that CMake can see `C:\Users\«USERNAME»\develop\SDK\SDL2-2.30.1\cmake`
+6. Download the OpenEXR development package for MinGW using `pacman -S mingw-w64-x86_64-openexr`
 
 ### To compile `hexray` manually:
 
@@ -35,8 +36,12 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
 2. Download the SDL2 development package for **VC** from [here](https://github.com/libsdl-org/SDL/releases/)
     - E.g., use [SDL-devel-2.30.1-VC.zip](https://github.com/libsdl-org/SDL/releases/download/release-2.30.1/SDL2-devel-2.30.1-VC.zip)
 3. Install CMake — version **3.13** or newer is OK.
-4. \(_Same as regular [setup](#setup-on-windows)_\) Make a "SDK" directory, either in a "develop" subfolder in your user directory (e.g. `C:\Users\«USERNAME»\develop\SDK`) or in `C:\`
+4. \(_Same as regular [setup](#setup-on-windows)_\) Make a "SDK" directory, either in a "develop" subfolder in your user directory (e.g. `C:\Users\«USERNAME»\develop`) or in `C:\`
 5. \(_Same as regular [setup](#setup-on-windows)_\) Unarchive the SDL2-devel there, e.g. so that CMake can see `C:\Users\«USERNAME»\develop\SDK\SDL2-2.30.1\cmake`
+6. Setup [OpenEXR](#setting-up-openexr) with one of the following options:
+    - Using `vcpkg`. OpenEXR can be built and setup with the following command line `vcpkg install openexr:x64-windows --x-install-root="C:\Users\«USERNAME»\develop\SDK"`.
+        * Details on setting up `vcpkg` can be found [here](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started?pivots=shell-cmd#1---set-up-vcpkg).
+        * **OR** `vcpkg` may be cloned and used locally: `git clone https://github.com/microsoft/vcpkg.git && cd vcpkg && bootstrap-vcpkg.bat`, then simply execute the install command above.
 
 ### To create a Visual Studio solution for `hexray`
 

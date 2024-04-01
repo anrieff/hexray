@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.7)
 project(heX-Ray CXX)
 
-# CMake project for hexray. It uses SDL2.
-# For Windows users: make sure you've unpacked your SDL in either
+# CMake project for hexray. It uses SDL2 and OpenEXR (with its dependencies).
+# For Windows users: make sure you've unpacked your SDL and OpenEXR in either
 #   - your user dir, subdir "develop\SDK", e.g. C:\Users\YOUR_USER\develop\SDK\SDL2-2.30.1
 #   - in C:\SDK, e.g. C:\SDK\SDL2-2.30.1
 #   - or in arbitrary directory provided in CMAKE_PREFIX_PATH
@@ -13,6 +13,8 @@ if (WIN32)
         message("If you get an error about 'nmake' missing, be sure to call CMake with -G 'MinGW Makefiles'")
     endif()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # Additional search directories for vcpkg
+        set(CMAKE_PREFIX_PATH "~/develop/SDK/x64-windows;c:\\SDK\\x64-windows;${CMAKE_PREFIX_PATH}")
         # Explicitly require standard conformance to ensure portability.
         add_compile_options("/Zc:__cplusplus" "/permissive-")
     endif()
@@ -56,5 +58,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
     # Set the startup project directly to be ready for running and debugging.
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT hexray)
     # Set the PATH environment variable to include the SDL2 binary directory to load dependencies without manual copies.
-    set_target_properties(hexray PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=${SDL2_BINDIR};$ENV{PATH}")
+    set_target_properties(hexray PROPERTIES VS_DEBUGGER_ENVIRONMENT
+      "PATH=${SDL2_BINDIR};$<TARGET_FILE_DIR:OpenEXR::OpenEXR>;$<TARGET_FILE_DIR:Imath::Imath>;$<TARGET_FILE_DIR:libdeflate::libdeflate_shared>;$ENV{PATH}"
+    )
 endif()
