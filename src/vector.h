@@ -25,6 +25,7 @@
 #pragma once
 
 #include <math.h>
+#include <utility>
 
 struct Vector {
 	union {
