@@ -42,6 +42,7 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
     - Using `vcpkg`. OpenEXR can be built and setup with the following command line `vcpkg install openexr:x64-windows --x-install-root="C:\Users\«USERNAME»\develop\SDK"`.
         * Details on setting up `vcpkg` can be found [here](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started?pivots=shell-cmd#1---set-up-vcpkg).
         * **OR** directly use the following command line: `git clone https://github.com/microsoft/vcpkg.git && cd vcpkg && bootstrap-vcpkg.bat`, then simply execute the install command above.
+    - Build `OpenEXR` during CMake configuration, by adding `-DHEXRAY_BUILD_OPENEXR` to the cmake configuration line (or with `cmake-gui`).
 
 ### To create a Visual Studio solution for `hexray`
 
