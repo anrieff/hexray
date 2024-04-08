@@ -39,4 +39,5 @@ std::string extensionUpper(const char* fileName); //!< Given a filename, return 
 
 /// returns a random floating-point number in [0..1).
 /// This is not a very good implementation. A better method is to be employed soon.
-inline float randomFloat() { return rand() / (float) RAND_MAX; }
+float randFloat();
+double randDouble();

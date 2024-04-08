@@ -27,6 +27,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <random>
 #include "util.h"
 
 #include <string>
@@ -46,4 +47,18 @@ string extensionUpper(const char* fileName)
 		}
 	}
 	return "";
+}
+
+static std::mt19937 generator; // mersenne twister generator
+
+float randFloat()
+{
+	static std::uniform_real_distribution<float> sampler;
+	return sampler(generator);
+}
+
+double randDouble()
+{
+	static std::uniform_real_distribution<double> sampler;
+	return sampler(generator);
 }

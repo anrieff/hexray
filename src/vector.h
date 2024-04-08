@@ -178,3 +178,23 @@ inline Vector reflect(const Vector& i, const Vector& n)
 {
 	return 2 * dot(-i, n) * n + i;
 }
+
+// finds an orthonormed basis around v (which must be an unit vector)
+// The returned pair of vectors:
+//   dot(result.first, v) == 0
+//   dot(result.second, v) == 0
+//   dot(result.first, result.second) == 0
+inline std::pair<Vector, Vector> othonormedBasis(const Vector& v)
+{
+	std::pair<Vector, Vector> result;
+	static const Vector TEST_VECTORS[2] = {
+		Vector{0.577350269, 0.577350269, 0.577350269},
+		Vector{0.267261242, -0.534522484, 0.801783726},
+	};
+	int i = 0;
+	if (fabs(dot(v, TEST_VECTORS[0])) > 0.9) i = 1;
+	result.first  = TEST_VECTORS[i] ^ v;
+	result.first.normalize();
+	result.second = result.first ^ v;
+	return result;
+}
