@@ -110,7 +110,7 @@ Color BitmapTexture::sample(Ray ray, const IntersectionInfo& info)
     v -= floor(v);
     u *= m_bitmap.getWidth();
     v *= m_bitmap.getHeight();
-    return m_bitmap.getPixel(int(u), int(v));
+    return m_bitmap.getFilteredPixel(u, v);
 }
 
 Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)

@@ -63,6 +63,23 @@ Color Bitmap::getPixel(int x, int y) const
 	return m_data[x + y * m_width];
 }
 
+Color Bitmap::getFilteredPixel(float x, float y) const
+{
+	if (m_data.empty() || !m_width || !m_height || x < 0 || x >= m_width || y < 0 || y >= m_height) return Color(0.0f, 0.0f, 0.0f);
+	int tx = (int) floor(x);
+	int ty = (int) floor(y);
+	int tx_next = (tx + 1) % m_width;
+	int ty_next = (ty + 1) % m_height;
+	float p = x - tx;
+	float q = y - ty;
+	return
+		  m_data[ty      * m_width + tx     ] * ((1.0f - p) * (1.0f - q))
+		+ m_data[ty      * m_width + tx_next] * (        p  * (1.0f - q))
+		+ m_data[ty_next * m_width + tx     ] * ((1.0f - p) *         q )
+		+ m_data[ty_next * m_width + tx_next] * (        p  *         q );
+}
+
+
 void Bitmap::setPixel(int x, int y, const Color& color)
 {
 	if (m_data.empty() || x < 0 || x >= m_width || y < 0 || y >= m_height) return;
