@@ -230,32 +230,64 @@ static void ensureDataIsVisible()
 	}
 }
 
+double g(double x, double y)
+{
+	// return the fuzzy object that would be very hard to integrate using the standard calculus tooling
+	double angle = atan2(y - 0.5, x - 0.5);
+	double radius = 0.4 + sin(angle * 6) * 0.05;
+	return sqr(x - 0.5) + sqr(y - 0.5) < sqr(radius);
+}
+
+double f(double x, double y)
+{
+	return sqr(x - 0.5) + sqr(y - 0.5) < 0.25;
+}
+
+void demoMonteCarlo()
+{
+	bool uniformSampling = false;
+	long long N = 80, c = 0;
+	double sum = 0.0;
+	while (!checkForUserExit()) {
+		while (c < N) {
+			c++;
+			double x;
+			if (uniformSampling) {
+				// draw x uniformly (rho(...) = 1.0)
+				x = randDouble();
+			} else {
+				// draw x with skewed distribution; the pdf is trapezoidal:
+				//   pdf(0) ~= 1
+				//   pdf(1) ~= 1/6
+				double p;
+				do {
+					x = randDouble();
+					p = randDouble() * 1.2;
+				} while (!(x < p));
+			}
+			double y = randDouble();
+			// normalize the pdf so that Integrate[pdf[x], {x, 0, 1}] = 1
+			double pdf = uniformSampling ? 1.0 : ((1.0/6.0 + 5.0/6.0 * (1 - x)) * 12 / 7.0);
+			double fun = f(x, y);
+			sum += fun / pdf;
+			//
+			int ix = 162 + x * 700;
+			int iy = 34 + y * 700;
+			vfb[iy][ix] += (Color(1, 0, 0) * (1 - fun) + Color(0, 1, 0) * fun) * 0.25f;
+		}
+		displayVFB(vfb);
+		double average = sum / N;
+		printf("N = %lld, func average = %.9f, pi = %.9f\n", N, average, average * 4);
+		N *= 2;
+		SDL_Delay(200);
+	}
+}
+
 int main(int argc, char** argv)
 {
 	ensureDataIsVisible();
-	initGraphics(800, 600);
-	setupScene();
-	Uint32 start = SDL_GetTicks();
-	bool shouldExit = false;
-	for (double angle = 0; !shouldExit && angle < 360; angle += 10) {
-		double a_rad = toRadians(angle);
-		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
-		camera.yaw = angle;
-		camera.beginFrame();
-		//nodes.back().T.rotate(30, 15, 0);
-		cube.beginFrame();
-		render();
-		displayVFB(vfb);
-		if (checkForUserExit()) {
-			printf("Exited early.\n");
-			shouldExit = true;
-		}
-	}
-	if (!shouldExit) {
-		Uint32 end = SDL_GetTicks();
-		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
-		waitForUserExit();
-	}
+	initGraphics(1024, 768);
+	demoMonteCarlo();
 	closeGraphics();
 	printf("Exited cleanly\n");
 	return 0;
