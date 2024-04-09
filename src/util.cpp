@@ -62,3 +62,11 @@ double randDouble()
 	static std::uniform_real_distribution<double> sampler;
 	return sampler(generator);
 }
+
+void unitDiskSample(double& x, double& y)
+{
+	do {
+		x = randDouble() * 2 - 1;
+		y = randDouble() * 2 - 1;
+	} while (x * x + y * y > 1);
+}

@@ -94,7 +94,10 @@ public:
 
 class Reflection: public Shader {
 public:
+    float glossiness = 1.0f;
     Color reflColor = Color(0.95f, 0.95f, 0.95f);
+    int numSamples = 50;
+    Reflection(float g = 1.0, Color rc = Color(0.95f, 0.95f, 0.95f)): glossiness(g), reflColor(rc) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 };
 

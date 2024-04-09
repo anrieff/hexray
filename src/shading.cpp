@@ -118,8 +118,28 @@ Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)
     Vector n = faceforward(ray.dir, info.norm);
     Ray newRay = ray;
     newRay.start = info.ip + n * 1e-6;
-    newRay.dir = reflect(ray.dir, n);
     newRay.depth = ray.depth + 1;
+    if (glossiness < 1.0f) {
+        float scaling = pow(10.0f, 2 - 8*glossiness);
+        auto [u, v] = othonormedBasis(n);
+        Color sum(0, 0, 0);
+        for (int i = 0; i < numSamples; i++) {
+            Vector reflected;
+            do {
+                double x, y;
+                unitDiskSample(x, y);
+                x *= scaling;
+                y *= scaling;
+                Vector modifiedNormal = n + u * x + v * y;
+                modifiedNormal.normalize();
+                reflected = reflect(ray.dir, modifiedNormal);
+            } while (dot(reflected, n) < 0);
+            newRay.dir = reflected;
+            sum += raytrace(newRay) * reflColor;
+        }
+        return sum / numSamples;
+    }
+    newRay.dir = reflect(ray.dir, n);
     return raytrace(newRay) * reflColor; // account for attenuation
 }
 

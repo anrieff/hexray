@@ -98,7 +98,7 @@ void setupScene()
 	Texture* floor  = new BitmapTexture("data/floor.bmp");
 	Layered* floorShader = new Layered;
 	floorShader->addLayer( new Lambert(Color(0, 0, 0.8), floor));
-	floorShader->addLayer( new Reflection, Color(0.02, 0.02, 0.02));
+	//floorShader->addLayer( new Reflection, Color(0.02, 0.02, 0.02));
 	nodes.push_back(Node{ new Plane(0), floorShader });
 	// Create a globe with the world map:
 	Phong* globeMat = new Phong;
@@ -107,7 +107,8 @@ void setupScene()
 	Layered* glass = new Layered;
 	glass->addLayer(new Refraction);
 	glass->addLayer(new Reflection, Color(1, 1, 1), new Fresnel);
-	nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), glass});
+	Reflection* glossy = new Reflection(0.45f);
+	nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), glossy});
 	// Create a CSG object: a cube with a cut out sphere in the middle
 	Texture* checker = new CheckerTexture(Color(0x8d3d3d), Color(0x9c9c9c), 5);
 	Phong* phong = new Phong(Color(0.6, 0.4, 0.1), Color(1, 1, 1), 120.0f, checker);
@@ -116,11 +117,13 @@ void setupScene()
 	refl1->reflColor = Color(0.8, 0.8, 0.8);
 	refl2->reflColor = Color(0.4, 0.4, 0.9);
 	auto csg = new CSGDiff(&cube, &sphere);
+	/*
 	nodes.push_back(Node{ csg, refl1});
 	nodes.back().T.translate(csgCenter);
 	nodes.push_back(Node{ csg, refl2});
 	nodes.back().T.translate(csgCenter + Vector(40, 0, 0));
 	nodes.back().T.scale(0.5);
+	*/
 	// Create a complex CSG object: cube with rounded edges:
 	/*nodes.push_back(Node{ createRoundedEdgesCube(Vector(0, 20, 15), 40, 10),
 	                      new Phong(Color(0.9, 0.4, 0.1), Color(1, 1, 1), 125.0f)});*/

@@ -41,3 +41,4 @@ std::string extensionUpper(const char* fileName); //!< Given a filename, return 
 /// This is not a very good implementation. A better method is to be employed soon.
 float randFloat();
 double randDouble();
+void unitDiskSample(double& x, double& y);
