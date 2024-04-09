@@ -33,6 +33,14 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
 1. Copy SDL2.dll from SDL2\x86_64-w64-mingw32\bin\ to your "build" directory (only necessary if you did not use `pacman` and do not have the `ucrt64/bin` in `$PATH`)
 2. You're all set - run `hexray.exe`
 
+### Additional tips for debugging:
+
+1. The `launch.json` has been setup to automatically run `hexray.exe`, but the default `CMAKE_BUILD_TYPE` is `Release`. This means to debug the executable, there are two options:
+    - Change the `CMAKE_BUILD_TYPE` to `NoOpt` or `RelWithDebInfo` \(either during configure time or from `cmake-gui`\).
+        * E.g. by configuring with the following command line \(Recommended\): `cmake -G "MinGW Makefiles" -CMAKE_BUILD_TYPE=RelWithDebInfo ..`
+    - Add the compiler flag to generate debug information even for `Release` build type, by adding `-g` to the `CMAKE_CXX_FLAGS` configuration variable.
+        * E.g. by adding this to the initial command line: `cmake -G "MinGW Makefiles" -DCMAKE_CXX_FLAGS=-g ..`, or directly setting the variable through `cmake-gui`.
+
 ## Setup on Windows **with Visual Studio**
 
 1. Install Visual Studio Community edition (free for personal use). It can be downloaded from [here](https://visualstudio.microsoft.com/vs/community/).

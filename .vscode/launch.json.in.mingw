@@ -8,13 +8,19 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/hexray",
+            "program": "@CMAKE_CURRENT_BINARY_DIR@/hexray",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "@_msys_root_escaped@\\ucrt64\\bin;${env:PATH}"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
+            "miDebuggerPath": "@_msys_root_escaped@\\ucrt64\\bin\\gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

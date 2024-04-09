@@ -70,6 +70,7 @@ target_link_libraries(hexray ${SDL2_LIBRARIES} OpenEXR::OpenEXR)
 
 set_property(TARGET hexray PROPERTY CXX_STANDARD 17)
 
+# Additional configuration for easy debugging in Visual Studio
 if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
 	# Set the startup project directly to be ready for running and debugging.
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT hexray)
@@ -81,4 +82,13 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
 	set_target_properties(hexray PROPERTIES VS_DEBUGGER_ENVIRONMENT
 		"PATH=${_debug_path};$ENV{PATH}"
 	)
+endif()
+
+# Configure the VSCode launch file
+if (WIN32 AND CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
+	# Backslashes need to be escaped additionally for the json generation.
+	string(REPLACE "\\" "\\\\" _msys_root_escaped "${HEXRAY_MSYS_ROOT}")
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/.vscode/launch.json.in.mingw ${CMAKE_CURRENT_SOURCE_DIR}/.vscode/launch.json @ONLY)
+else()
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/.vscode/launch.json.in.linux ${CMAKE_CURRENT_SOURCE_DIR}/.vscode/launch.json @ONLY)
 endif()
