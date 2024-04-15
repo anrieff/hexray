@@ -27,7 +27,7 @@
 #include <string.h>
 #include <algorithm>
 #include <numeric>
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include "mesh.h"
 #include "constants.h"
 #include "color.h"
