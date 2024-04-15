@@ -39,10 +39,13 @@
 #include "environment.h"
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
+bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];
 Camera camera;
 Color backgroundColor(0, 0, 0);
 const int MAX_RAY_DEPTH = 10;
 std::vector<Rect> buckets;
+bool wantAA = true;
+const float AA_THRESH = 0.075f;
 
 struct Node {
 	Geometry* geom;
@@ -194,6 +197,37 @@ bool visible(Vector A, Vector B)
 	return true;
 }
 
+static void detectAApixels()
+{
+	const int neighbours[8][2] = {
+		{ -1, -1 }, { 0, -1 }, { 1, -1 },
+		{ -1,  0 },            { 1,  0 },
+		{ -1,  1 }, { 0,  1 }, { 1,  1 }
+	};
+	int W = frameWidth(), H = frameHeight();
+	for (auto& r: buckets) {
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++) {
+				needsAA[y][x] = false;
+				const Color& me = vfb[y][x];
+				for (int ni = 0; ni < COUNT_OF(neighbours); ni++) {
+					int neighX = x + neighbours[ni][0];
+					int neighY = y + neighbours[ni][1];
+					if (neighX < 0 || neighX >= W || neighY < 0 || neighY >= H) continue;
+					const Color& neighbour = vfb[neighY][neighX];
+					for (int channel = 0; channel < 3; channel++) {
+						if (fabs(std::min(1.0f, me[channel]) - std::min(1.0f, neighbour[channel])) > AA_THRESH) {
+							needsAA[y][x] = true;
+							break;
+						}
+					}
+					if (needsAA[y][x]) break;
+				}
+			}
+	}
+	markAApixels(needsAA);
+}
+
 bool render(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
@@ -204,12 +238,34 @@ bool render(bool displayProgress) // returns true if the complete frame is rende
 		{ 0.6f, 0.6f },
 	};
 	static const int AA_KERNEL_SIZE = int(COUNT_OF(AA_KERNEL));
+	// Pass 1: render without anti-aliasing
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++)
 				vfb[y][x] = raytrace(camera.getScreenRay(x, y));
 		if (displayProgress) displayVFBRect(r, vfb);
+		if (checkForUserExit()) return false;
 	}
+	// Do we need AA? if not, we're done
+	if (!wantAA) return true;
+	// Pass 2: detect pixels, needing AA:
+	detectAApixels();
+	// show them:
+	if (displayProgress) markAApixels(needsAA);
+	// Pass 3: recompute those pixels with the AA kernel:
+	float mul = 1.0f / AA_KERNEL_SIZE;
+	for (auto& r: buckets) {
+		if (displayProgress) markRegion(r);
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++) {
+				for (int i = 1; i < AA_KERNEL_SIZE; i++)
+					vfb[y][x] += raytrace(camera.getScreenRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]));
+				vfb[y][x] *= mul;
+			}
+		if (displayProgress) displayVFBRect(r, vfb);
+		if (checkForUserExit()) return false;
+	}
+
 	return true;
 }
 

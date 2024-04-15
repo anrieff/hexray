@@ -176,7 +176,7 @@ bool markRegion(Rect r, const Color& bracketColor)
 	const int L = 8;
 	if (r.w < L+3 || r.h < L+3) return true; // region is too small to be marked
 	const Uint32 BRACKET_COLOR = bracketColor.toRGB32();
-	const Uint32 OUTLINE_COLOR = Color(0.75f, 0.75f, 0.75f).toRGB32();
+	const Uint32 OUTLINE_COLOR = 0xffffff;
 	#define DRAW_ONE(x, y, color) \
 		((Uint32*) (((Uint8*) screen->pixels) + ((r.y0 + (y)) * screen->pitch)))[r.x0 + (x)] = color
 	#define DRAW(x, y, color) \
@@ -205,4 +205,16 @@ bool markRegion(Rect r, const Color& bracketColor)
 	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
 
 	return true;
+}
+
+/// displays pixels, set to true in the given array in yellow on the screen
+void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE])
+{
+	Uint32 YELLOW = Color(1, 1, 0).toRGB32(screen->format->Rshift, screen->format->Gshift, screen->format->Bshift);
+	for (int y = 0; y < screen->h; y++) {
+		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
+		for (int x = 0; x < screen->w; x++)
+			if (needsAA[y][x]) row[x] = YELLOW;
+	}
+	SDL_UpdateWindowSurface(window);
 }
