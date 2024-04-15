@@ -26,6 +26,20 @@
 
 #include "color.h"
 #include "constants.h"
+#include <vector>
+
+struct Rect {
+	int x0, y0, x1, y1, w, h;
+	Rect() {}
+	Rect(int _x0, int _y0, int _x1, int _y1)
+	{
+		x0 = _x0, y0 = _y0, x1 = _x1, y1 = _y1;
+		h = y1 - y0;
+		w = x1 - x0;
+	}
+	void clip(int maxX, int maxY); // clips the rectangle against image size
+};
+
 
 bool initGraphics(int frameWidth, int frameHeight);
 void closeGraphics(void);
@@ -34,3 +48,8 @@ void waitForUserExit(void); //!< Pause. Wait until the user closes the applicati
 bool checkForUserExit(void); //!< check if the user wants to close the application (returns true if so)
 int frameWidth(void); //!< returns the frame width (pixels)
 int frameHeight(void); //!< returns the frame height (pixels)
+
+/// generate a list of buckets (image sub-rectangles) to be rendered, in a zigzag pattern
+std::vector<Rect> getBucketsList(int bucketSize = 48);
+bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]);
+bool markRegion(Rect r, const Color& bracketColor);

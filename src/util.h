@@ -29,6 +29,8 @@
 #include <string>
 #include "constants.h"
 
+#define COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+
 inline double signOf(double x) { return x > 0 ? +1 : -1; }
 inline double sqr(double a) { return a * a; }
 inline double toRadians(double angle) { return angle / 180.0 * PI; }

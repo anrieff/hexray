@@ -42,6 +42,7 @@ Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 Camera camera;
 Color backgroundColor(0, 0, 0);
 const int MAX_RAY_DEPTH = 10;
+std::vector<Rect> buckets;
 
 struct Node {
 	Geometry* geom;
@@ -202,17 +203,13 @@ bool render(bool displayProgress) // returns true if the complete frame is rende
 		{ 0.0f, 0.6f },
 		{ 0.6f, 0.6f },
 	};
-	for (int y = 0; y < frameHeight(); y++) {
-		for (int x = 0; x < frameWidth(); x++) {
-			Color sum(0, 0, 0);
-			for (int i = 0; i < 1; i++) {
-				Ray ray = camera.getScreenRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
-				sum += raytrace(ray);
-			}
-			vfb[y][x] = sum * 1.0f;
-		}
+	static const int AA_KERNEL_SIZE = int(COUNT_OF(AA_KERNEL));
+	for (auto& r: buckets) {
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++)
+				vfb[y][x] = raytrace(camera.getScreenRay(x, y));
+		if (displayProgress) displayVFBRect(r, vfb);
 	}
-	if (displayProgress) displayVFB(vfb);
 	return true;
 }
 
@@ -257,6 +254,7 @@ int main(int argc, char** argv)
 {
 	ensureDataIsVisible();
 	initGraphics(800, 600);
+	buckets = getBucketsList();
 	setupScene();
 	Uint32 start = SDL_GetTicks();
 	if (renderStatic()) {

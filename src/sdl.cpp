@@ -26,6 +26,7 @@
 #include <SDL_video.h>
 #include <stdio.h>
 #include "sdl.h"
+#include <algorithm>
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
@@ -127,4 +128,81 @@ int frameHeight(void)
 {
 	if (screen) return screen->h;
 	return 0;
+}
+
+void Rect::clip(int W, int H)
+{
+	x1 = std::min(x1, W);
+	y1 = std::min(y1, H);
+	w = std::max(0, x1 - x0);
+	h = std::max(0, y1 - y0);
+}
+
+std::vector<Rect> getBucketsList(int bucketSize)
+{
+	std::vector<Rect> res;
+	int BW = (frameWidth() - 1) / bucketSize + 1;
+	int BH = (frameHeight() - 1) / bucketSize + 1;
+	for (int y = 0; y < BH; y++) {
+		for (int x = 0; x < BW; x++)
+			res.push_back(Rect(x * bucketSize, y * bucketSize, (x + 1) * bucketSize, (y + 1) * bucketSize));
+		if (y % 2) std::reverse(res.end() - BW, res.end()); // make the odd rows run right-to-left, not left-to-right
+	}
+	// clip the edge buckets to the frame dimensions:
+	for (int i = 0; i < (int) res.size(); i++)
+		res[i].clip(frameWidth(), frameHeight());
+	return res;
+}
+
+bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
+{
+	r.clip(frameWidth(), frameHeight());
+	int rs = screen->format->Rshift;
+	int gs = screen->format->Gshift;
+	int bs = screen->format->Bshift;
+	for (int y = r.y0; y < r.y1; y++) {
+		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
+		for (int x = r.x0; x < r.x1; x++)
+			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
+	}
+	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
+	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+	return true;
+}
+
+bool markRegion(Rect r, const Color& bracketColor)
+{
+	r.clip(frameWidth(), frameHeight());
+	const int L = 8;
+	if (r.w < L+3 || r.h < L+3) return true; // region is too small to be marked
+	const Uint32 BRACKET_COLOR = bracketColor.toRGB32();
+	const Uint32 OUTLINE_COLOR = Color(0.75f, 0.75f, 0.75f).toRGB32();
+	#define DRAW_ONE(x, y, color) \
+		((Uint32*) (((Uint8*) screen->pixels) + ((r.y0 + (y)) * screen->pitch)))[r.x0 + (x)] = color
+	#define DRAW(x, y, color) \
+		DRAW_ONE(x, y, color); \
+		DRAW_ONE(y, x, color); \
+		DRAW_ONE(r.w - 1 - (x), y, color); \
+		DRAW_ONE(r.w - 1 - (y), x, color); \
+		DRAW_ONE(x, r.h - 1 - (y), color); \
+		DRAW_ONE(y, r.h - 1 - (x), color); \
+		DRAW_ONE(r.w - 1 - (x), r.h - 1 - (y), color); \
+		DRAW_ONE(r.w - 1 - (y), r.h - 1 - (x), color)
+
+	for (int i = 1; i <= L; i++) {
+		DRAW(i, 0, OUTLINE_COLOR);
+	}
+	DRAW(1, 1, OUTLINE_COLOR);
+	DRAW(L + 1, 1, OUTLINE_COLOR);
+	for (int i = 0; i <= L; i++) {
+		DRAW(i, 2, OUTLINE_COLOR);
+	}
+	for  (int i = 2; i <= L; i++) {
+		DRAW(i, 1, BRACKET_COLOR);
+	}
+
+	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
+	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+
+	return true;
 }
