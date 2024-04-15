@@ -193,7 +193,7 @@ bool visible(Vector A, Vector B)
 	return true;
 }
 
-void render()
+bool render(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
 		{ 0.0f, 0.0f },
@@ -202,7 +202,6 @@ void render()
 		{ 0.0f, 0.6f },
 		{ 0.6f, 0.6f },
 	};
-	memset(vfb, 0, sizeof(vfb));
 	for (int y = 0; y < frameHeight(); y++) {
 		for (int x = 0; x < frameWidth(); x++) {
 			Color sum(0, 0, 0);
@@ -213,6 +212,8 @@ void render()
 			vfb[y][x] = sum * 1.0f;
 		}
 	}
+	if (displayProgress) displayVFB(vfb);
+	return true;
 }
 
 // makes sure we see the "data" dir:
@@ -230,28 +231,35 @@ static void ensureDataIsVisible()
 	}
 }
 
-int main(int argc, char** argv)
+bool renderAnimation()
 {
-	ensureDataIsVisible();
-	initGraphics(800, 600);
-	setupScene();
-	Uint32 start = SDL_GetTicks();
-	bool shouldExit = false;
-	for (double angle = 0; !shouldExit && angle < 360; angle += 10) {
+	for (double angle = 0; angle < 360; angle += 10) {
 		double a_rad = toRadians(angle);
 		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
 		camera.yaw = angle;
 		camera.beginFrame();
 		//nodes.back().T.rotate(30, 15, 0);
 		cube.beginFrame();
-		render();
+		render(false);
 		displayVFB(vfb);
-		if (checkForUserExit()) {
-			printf("Exited early.\n");
-			shouldExit = true;
-		}
+		if (checkForUserExit()) return false;
 	}
-	if (!shouldExit) {
+	return true;
+}
+
+bool renderStatic()
+{
+	camera.beginFrame();
+	return render(true);
+}
+
+int main(int argc, char** argv)
+{
+	ensureDataIsVisible();
+	initGraphics(800, 600);
+	setupScene();
+	Uint32 start = SDL_GetTicks();
+	if (renderStatic()) {
 		Uint32 end = SDL_GetTicks();
 		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
 		waitForUserExit();
