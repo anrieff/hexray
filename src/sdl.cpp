@@ -26,6 +26,7 @@
 #include <SDL_video.h>
 #include <stdio.h>
 #include "sdl.h"
+#include "util.h"
 #include <algorithm>
 
 SDL_Window* window = nullptr;
@@ -176,7 +177,7 @@ bool markRegion(Rect r, const Color& bracketColor)
 	const int L = 8;
 	if (r.w < L+3 || r.h < L+3) return true; // region is too small to be marked
 	const Uint32 BRACKET_COLOR = bracketColor.toRGB32();
-	const Uint32 OUTLINE_COLOR = 0xffffff;
+	const Uint32 OUTLINE_COLOR = Color(1, 1, 1).toRGB32();
 	#define DRAW_ONE(x, y, color) \
 		((Uint32*) (((Uint8*) screen->pixels) + ((r.y0 + (y)) * screen->pitch)))[r.x0 + (x)] = color
 	#define DRAW(x, y, color) \

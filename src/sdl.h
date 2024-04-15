@@ -50,7 +50,7 @@ int frameWidth(void); //!< returns the frame width (pixels)
 int frameHeight(void); //!< returns the frame height (pixels)
 
 /// generate a list of buckets (image sub-rectangles) to be rendered, in a zigzag pattern
-std::vector<Rect> getBucketsList(int bucketSize = 48);
+std::vector<Rect> getBucketsList(int bucketSize = 64);
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]);
 bool markRegion(Rect r, const Color& bracketColor = Color(0, 0, 0.5f));
 void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE]);

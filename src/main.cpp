@@ -225,7 +225,6 @@ static void detectAApixels()
 				}
 			}
 	}
-	markAApixels(needsAA);
 }
 
 bool render(bool displayProgress) // returns true if the complete frame is rendered
@@ -238,27 +237,30 @@ bool render(bool displayProgress) // returns true if the complete frame is rende
 		{ 0.6f, 0.6f },
 	};
 	static const int AA_KERNEL_SIZE = int(COUNT_OF(AA_KERNEL));
+
 	// Pass 1: render without anti-aliasing
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++)
-				vfb[y][x] = raytrace(camera.getScreenRay(x, y));
+				vfb[y][x] = raytrace(camera.getScreenRay(x, y)); // should be "x + AA_KERNEL[0][0]", etc.
 		if (displayProgress) displayVFBRect(r, vfb);
 		if (checkForUserExit()) return false;
 	}
 	// Do we need AA? if not, we're done
 	if (!wantAA) return true;
+
 	// Pass 2: detect pixels, needing AA:
 	detectAApixels();
 	// show them:
 	if (displayProgress) markAApixels(needsAA);
+
 	// Pass 3: recompute those pixels with the AA kernel:
 	float mul = 1.0f / AA_KERNEL_SIZE;
 	for (auto& r: buckets) {
 		if (displayProgress) markRegion(r);
 		for (int y = r.y0; y < r.y1; y++)
-			for (int x = r.x0; x < r.x1; x++) {
-				for (int i = 1; i < AA_KERNEL_SIZE; i++)
+			for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
+				for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
 					vfb[y][x] += raytrace(camera.getScreenRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]));
 				vfb[y][x] *= mul;
 			}
@@ -286,6 +288,7 @@ static void ensureDataIsVisible()
 
 bool renderAnimation()
 {
+	wantAA = false; // make the animation quicker
 	for (double angle = 0; angle < 360; angle += 10) {
 		double a_rad = toRadians(angle);
 		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
@@ -293,9 +296,9 @@ bool renderAnimation()
 		camera.beginFrame();
 		//nodes.back().T.rotate(30, 15, 0);
 		cube.beginFrame();
-		render(false);
+		bool go = render(false);
 		displayVFB(vfb);
-		if (checkForUserExit()) return false;
+		if (!go || checkForUserExit()) return false;
 	}
 	return true;
 }
