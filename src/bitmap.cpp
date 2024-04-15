@@ -298,3 +298,20 @@ bool Bitmap::saveImage(const char* filename)
 	if (extensionUpper(filename) == "EXR") return saveEXR(filename);
 	return false;
 }
+
+void Bitmap::differentiate()
+{
+	Bitmap bumpTex;
+	bumpTex.generateEmptyImage(this->m_width, this->m_height);
+
+	for (int y = 0; y < m_height; y++) {
+		for (int x = 0; x < m_width; x++) {
+			float dx = getPixel(x, y).intensity() -
+					   getPixel((x + 1) % m_width, y).intensity();
+			float dy = getPixel(x, y).intensity() -
+					   getPixel(x, (y + 1) % m_height).intensity();
+			bumpTex.setPixel(x, y, Color(dx, dy, 0));
+		}
+	}
+	this->m_data = std::move(bumpTex.m_data);
+}

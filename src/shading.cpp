@@ -203,3 +203,11 @@ Color Fresnel::sample(Ray ray, const IntersectionInfo& info)
     float fr = fresnelSchlickApprox(NdotI, eta);
     return Color(fr, fr, fr);
 }
+
+void BumpTexture::loadFile(const char* file)
+{
+}
+
+void BumpTexture::modifyNormal(IntersectionInfo& info)
+{
+}

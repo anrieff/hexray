@@ -36,6 +36,7 @@
 #include "geometry.h"
 #include "shading.h"
 #include "matrix.h"
+#include "mesh.h"
 #include "environment.h"
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
@@ -121,6 +122,18 @@ void setupScene()
 	refl1->reflColor = Color(0.8, 0.8, 0.8);
 	refl2->reflColor = Color(0.4, 0.4, 0.9);
 	auto csg = new CSGDiff(&cube, &sphere);
+	Mesh* teapot = new Mesh;
+	teapot->loadFromOBJ("data/geom/teapot_lowres.obj");
+	teapot->beginRender();
+	float f1 = 0.6, f2 = 0.7;
+	Texture* teapotTex = new CheckerTexture(Color(f1, f1, f1), Color(f2, f2, f2), 0.2f);
+	nodes.push_back(Node{ teapot, new Phong(Color(0.9, 0.1, 0.1), Color(1, 1, 1), 84.0f, teapotTex)});
+	nodes.back().T.translate(Vector(-50, 0, 0));
+	nodes.back().T.scale(30);
+	/*nodes.back().bump = new BumpTexture();
+	nodes.back().bump->loadFile("data/texture/zar-bump.bmp");
+	nodes.back().bump->scaling = 0.8f;
+	nodes.back().bump->strength = 3.2f;*/
 	/*
 	nodes.push_back(Node{ csg, refl1});
 	nodes.back().T.translate(csgCenter);

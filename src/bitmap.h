@@ -56,4 +56,6 @@ public:
 
 	virtual bool loadImage(const char* filename); //!< Loads an image (the format is detected from extension)
 	virtual bool saveImage(const char* filename); //!< Save the bitmap to an image (the format is detected from extension)
+
+	void differentiate();
 };

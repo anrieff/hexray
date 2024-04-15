@@ -125,3 +125,11 @@ public:
     float ior = 1.33;
     virtual Color sample(Ray ray, const IntersectionInfo& info) override;
 };
+
+class BumpTexture {
+	Bitmap bitmap;
+public:
+	double strength = 1, scaling = 1;
+	void modifyNormal(IntersectionInfo& info);
+	void loadFile(const char* file);
+};

@@ -19,31 +19,44 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File util.h
- * @Brief a few useful short functions
+ * @File mesh.h
+ * @Brief Contains the Mesh class.
  */
 #pragma once
 
-#include <stdlib.h>
-#include <math.h>
-#include <string>
 #include <vector>
-#include "constants.h"
+#include "geometry.h"
+#include "vector.h"
 
-#define COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+/// A structure to represent a single triangle in the mesh
+struct Triangle {
+	int v[3]; //!< holds indices to the three vertices of the triangle (indexes in the `vertices' array in the Mesh)
+	int n[3]; //!< holds indices to the three normals of the triangle (indexes in the `normals' array)
+	int t[3]; //!< holds indices to the three texture coordinates of the triangle (indexes in the `uvs' array)
+	Vector gnormal; //!< The geometric normal of the mesh (AB ^ AC, normalized)
+	Vector AB, AC, ABcrossAC; //!< precomputed AB, AC and AB^AC
+	Vector dNdx, dNdy;
+};
+// the C vertex of triangle with index 5 is:
+// mesh.vertices[mesh.triangles[5].v[2]];
 
-inline double signOf(double x) { return x > 0 ? +1 : -1; }
-inline double sqr(double a) { return a * a; }
-inline double toRadians(double angle) { return angle / 180.0 * PI; }
-inline double toDegrees(double angle_rad) { return angle_rad / PI * 180.0; }
-inline int nearestInt(float x) { return (int) floor(x + 0.5f); }
+class Mesh: public Geometry {
+protected:
+	std::vector<Vector> vertices;
+	std::vector<Vector> normals;
+	std::vector<Vector> uvs;
+	std::vector<Triangle> triangles;
 
-std::string extensionUpper(const char* fileName); //!< Given a filename, return its extension in UPPERCASE
-std::vector<std::string> tokenize(std::string s);
-std::vector<std::string> split(std::string s, char separator);
+	void computeBoundingGeometry();
+	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
+    void prepareTriangles();
+public:
+	bool faceted = false;
+	bool backfaceCulling = false;
 
-/// returns a random floating-point number in [0..1).
-/// This is not a very good implementation. A better method is to be employed soon.
-float randFloat();
-double randDouble();
-void unitDiskSample(double& x, double& y);
+	bool loadFromOBJ(const char* filename);
+
+	void beginRender();
+
+	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+};

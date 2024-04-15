@@ -53,6 +53,8 @@ add_executable(hexray
 	src/geometry.h
 	src/main.cpp
 	src/main.h
+	src/mesh.cpp
+	src/mesh.h
 	src/matrix.cpp
 	src/matrix.h
 	src/sdl.cpp
