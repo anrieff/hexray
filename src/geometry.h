@@ -33,6 +33,7 @@ struct IntersectionInfo {
     double dist;
     Vector ip;
     Vector norm;
+    Vector dNdx, dNdy;
     double u, v;
     Geometry *geom;
 };

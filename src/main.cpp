@@ -52,6 +52,7 @@ struct Node {
 	Geometry* geom;
 	Shader* shader;
 	Transform T;
+	BumpTexture* bump = nullptr;
 
 	bool intersect(Ray ray, IntersectionInfo& info);
 };
@@ -113,7 +114,7 @@ void setupScene()
 	glass->addLayer(new Refraction);
 	glass->addLayer(new Reflection, Color(1, 1, 1), new Fresnel);
 	Reflection* glossy = new Reflection(0.45f);
-	nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), glossy});
+	//nodes.push_back(Node{ new Sphere(Vector(50, 30, 15), 30), glossy});
 	// Create a CSG object: a cube with a cut out sphere in the middle
 	Texture* checker = new CheckerTexture(Color(0x8d3d3d), Color(0x9c9c9c), 5);
 	Phong* phong = new Phong(Color(0.6, 0.4, 0.1), Color(1, 1, 1), 120.0f, checker);
@@ -127,13 +128,17 @@ void setupScene()
 	teapot->beginRender();
 	float f1 = 0.6, f2 = 0.7;
 	Texture* teapotTex = new CheckerTexture(Color(f1, f1, f1), Color(f2, f2, f2), 0.2f);
-	nodes.push_back(Node{ teapot, new Phong(Color(0.9, 0.1, 0.1), Color(1, 1, 1), 84.0f, teapotTex)});
+	Texture* zarTex = new BitmapTexture("data/texture/zar-texture.bmp", 1);
+	nodes.push_back(Node{ teapot, new Phong(Color(0.9, 0.1, 0.1), Color(1, 1, 1), 84.0f/*, zarTex*/)});
 	nodes.back().T.translate(Vector(-50, 0, 0));
 	nodes.back().T.scale(30);
-	/*nodes.back().bump = new BumpTexture();
+
+	nodes.back().bump = new BumpTexture();
 	nodes.back().bump->loadFile("data/texture/zar-bump.bmp");
 	nodes.back().bump->scaling = 0.8f;
-	nodes.back().bump->strength = 3.2f;*/
+	nodes.back().bump->strength = 3.2f;
+
+	/**/
 	/*
 	nodes.push_back(Node{ csg, refl1});
 	nodes.back().T.translate(csgCenter);
@@ -175,6 +180,9 @@ Color raytrace(Ray ray)
 	if (closestIntersection.dist >= INF) {
 		if (environment) return environment->getEnvironment(ray.dir);
 		return backgroundColor;
+	}
+	if (closestNode.bump) {
+		closestNode.bump->modifyNormal(closestIntersection);
 	}
 	return closestNode.shader->computeColor(ray, closestIntersection);
 }
@@ -303,12 +311,12 @@ bool renderAnimation()
 {
 	wantAA = false; // make the animation quicker
 	for (double angle = 0; angle < 360; angle += 10) {
-		double a_rad = toRadians(angle);
+/*		double a_rad = toRadians(angle);
 		camera.pos = Vector(sin(a_rad) * 120, 60, -cos(a_rad) * 120);
 		camera.yaw = angle;
-		camera.beginFrame();
-		//nodes.back().T.rotate(30, 15, 0);
-		cube.beginFrame();
+		camera.beginFrame();*/
+		nodes.back().T.rotate(20, 0, 0);
+		//cube.beginFrame();
 		bool go = render(false);
 		displayVFB(vfb);
 		if (!go || checkForUserExit()) return false;

@@ -46,6 +46,7 @@ protected:
 	std::vector<Vector> normals;
 	std::vector<Vector> uvs;
 	std::vector<Triangle> triangles;
+	Sphere boundingSphere;
 
 	void computeBoundingGeometry();
 	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);

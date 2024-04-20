@@ -206,8 +206,19 @@ Color Fresnel::sample(Ray ray, const IntersectionInfo& info)
 
 void BumpTexture::loadFile(const char* file)
 {
+    bitmap.loadImage(file);
+    bitmap.differentiate();
 }
 
 void BumpTexture::modifyNormal(IntersectionInfo& info)
 {
+    float x = fmod(info.u * scaling * bitmap.getWidth(), bitmap.getWidth());
+    float y = fmod(info.v * scaling * bitmap.getHeight(), bitmap.getHeight());
+    //
+    Color bump = bitmap.getFilteredPixel(x, y);
+    float dx = bump.r * strength;
+    float dy = bump.g * strength;
+
+    info.norm += (info.dNdx * dx + info.dNdy * dy);
+    info.norm.normalize();
 }
