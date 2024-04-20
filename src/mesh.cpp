@@ -218,7 +218,7 @@ static void solve2D(Vector A, Vector B, Vector C, double& x, double& y)
 	double h[2] = { C.x, C.y };
 	double Dcr = mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1];
 	x          = h[0]      * mat[1][1] - h[1]      * mat[0][1];
-	y          = mat[0][0] * h[0]      - mat[1][0] * h[1];
+	y          = mat[0][0] * h[1]      - mat[1][0] * h[0];
 }
 
 void Mesh::prepareTriangles()
