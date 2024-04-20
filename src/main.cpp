@@ -128,15 +128,26 @@ void setupScene()
 	teapot->beginRender();
 	float f1 = 0.6, f2 = 0.7;
 	Texture* teapotTex = new CheckerTexture(Color(f1, f1, f1), Color(f2, f2, f2), 0.2f);
-	Texture* zarTex = new BitmapTexture("data/texture/zar-texture.bmp", 1);
-	nodes.push_back(Node{ teapot, new Phong(Color(0.9, 0.1, 0.1), Color(1, 1, 1), 84.0f/*, zarTex*/)});
+	nodes.push_back(Node{ teapot, new Phong(Color(0.9, 0.1, 0.1), Color(1, 1, 1), 84.0f)});
 	nodes.back().T.translate(Vector(-50, 0, 0));
 	nodes.back().T.scale(30);
 
-	nodes.back().bump = new BumpTexture();
-	nodes.back().bump->loadFile("data/texture/zar-bump.bmp");
-	nodes.back().bump->scaling = 0.8f;
-	nodes.back().bump->strength = 3.2f;
+	auto bumpmap = new BumpTexture();
+	bumpmap->loadFile("data/texture/zar-bump.bmp");
+	bumpmap->strength = 3.2f;
+
+	nodes.back().bump = bumpmap;
+
+	Mesh* dice = new Mesh;
+	dice->loadFromOBJ("data/geom/truncated_cube.obj");
+	dice->beginRender();
+	Texture* zarTex = new BitmapTexture("data/texture/zar-texture.bmp", 1);
+	dice->faceted = true;
+	nodes.push_back(Node{ dice, new Lambert(Color(1, 1, 1), zarTex)});
+
+	nodes.back().bump = bumpmap;
+	nodes.back().T.scale(5);
+	nodes.back().T.translate(Vector(40, 20, 0));
 
 	/**/
 	/*
