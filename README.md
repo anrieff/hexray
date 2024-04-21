@@ -20,6 +20,12 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
         * Unarchive the SDL2-devel there, e.g. so that CMake can see `C:\Users\«USERNAME»\develop\SDK\SDL2-2.30.1\cmake`
 4. Download the OpenEXR development package for MinGW using `pacman -S mingw-w64-ucrt-x86_64-openexr`
 
+### Useful Visual Studio Code extensions
+
+- C/C++
+- CMake tools
+- clarity/navigation: Boomkarks, Trailing Spaces, Overtype
+
 ### To compile `hexray` manually:
 
 1. Create a "build" sub-directory: `mkdir build`
@@ -31,15 +37,12 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
 ### To run it:
 
 1. Copy SDL2.dll from SDL2\x86_64-w64-mingw32\bin\ to your "build" directory (only necessary if you did not use `pacman` and do not have the `ucrt64/bin` in `$PATH`)
-2. You're all set - run `hexray.exe`
+2. You may need to copy the OpenEXR .DLLs in the same manner - again, depends on whether they are in your `$PATH`.
+3. You're all set - run `hexray.exe`
 
 ### Additional tips for debugging:
 
-1. The `launch.json` has been setup to automatically run `hexray.exe`, but the default `CMAKE_BUILD_TYPE` is `Release`. This means to debug the executable, there are two options:
-    - Change the `CMAKE_BUILD_TYPE` to `NoOpt` or `RelWithDebInfo` \(either during configure time or from `cmake-gui`\).
-        * E.g. by configuring with the following command line \(Recommended\): `cmake -G "MinGW Makefiles" -CMAKE_BUILD_TYPE=RelWithDebInfo ..`
-    - Add the compiler flag to generate debug information even for `Release` build type, by adding `-g` to the `CMAKE_CXX_FLAGS` configuration variable.
-        * E.g. by adding this to the initial command line: `cmake -G "MinGW Makefiles" -DCMAKE_CXX_FLAGS=-g ..`, or directly setting the variable through `cmake-gui`.
+The setup works best if you install the CMake Tools extension for Visual Studio Code. This adds an option to change the build type (Debug, Release, MinSizeRel, ...) from the blue ribbon at the bottom of Visual Studio Code screen; the default setting is Debug, which is suitable for debugging. If you want to time how your changes contributed to the rendering speed, compile with Release.
 
 ## Setup on Windows **with Visual Studio**
 
@@ -70,3 +73,12 @@ Recommended setup on Windows if you don't have Visual Studio (e.g. you only have
 1. Open the generated `heX-Ray.sln` solution file.
 2. Build the solution \(`Build` -> `Build Solution` OR `[Ctrl]+[Shift]+[B]` \(some VS may have `[F7]` as shortcut for building\)\).
 3. Start the build \(`Debug` -> `Start Debugging` OR `[F5]`\).
+
+## Setup on Linux
+
+1. (Recommended): install Visual Studio Code (with the recommended extensions like CMake Tools)
+2. Download the SDK:
+    1. RedHat-based distros like Fedora, CentOS: `sudo dnf install SDL2-devel OpenEXR-devel`
+    2. Debian-based distros like Debian, Ubuntu: `sudo apt install libsdl2-dev openexr-dev`
+3. Open the folder via Visual Studio code, let CMake Tools to configure it, then it should be buildable from Visual Studio code
+4. (alternatively): you can always go to the hexray dir, and do `mkdir build; cd build; cmake ..; make` to build it manually as per above
