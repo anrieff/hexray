@@ -159,9 +159,10 @@ bool Mesh::loadFromOBJ(const char* filename)
 
 	if (!f) return false;
 
-	vertices.resize(1);
-	normals.resize(1);
-	uvs.resize(1);
+	Vector sentinel(0, 0, 0);
+	vertices = {sentinel};
+	normals = {sentinel};
+	uvs = {sentinel};
 
 	char line[10000];
 	while (fgets(line, sizeof(line), f)) {

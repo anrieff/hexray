@@ -26,6 +26,7 @@
 
 #include "vector.h"
 #include <functional>
+#include "scene.h"
 
 class Geometry;
 
@@ -38,25 +39,44 @@ struct IntersectionInfo {
     Geometry *geom;
 };
 
-class Geometry {
+/**
+ * @class Intersectable
+ * @brief implements the interface to an intersectable primitive (geometry or node)
+ */
+class Intersectable {
 public:
-    virtual bool intersect(Ray ray, IntersectionInfo& info) = 0;
+	virtual bool intersect(Ray ray, IntersectionInfo& info) = 0;
+};
+
+class Geometry: public Intersectable, public SceneElement {
+public:
+    //
+   	virtual ElementType getElementType() const override { return ELEM_GEOMETRY; }
 };
 
 class Plane: public Geometry {
 public:
-    double y;
+    double y = 0;
     double limit = 100;
-    Plane(double y): y(y) {}
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("y", &y);
+		pb.getDoubleProp("limit", &limit);
+	}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
 };
 
 class Sphere: public Geometry {
 public:
-    Vector O;
-    double R;
+    Vector O = Vector(0, 0, 0);
+    double R = 1;
     double uvscaling = 1;
-    Sphere(Vector O = Vector(0, 0, 0), double R = 1): O(O), R(R) {}
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getVectorProp("O", &O);
+		pb.getDoubleProp("R", &R, 0.0);
+        pb.getDoubleProp("uvscaling", &uvscaling, 1e-6);
+	}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
 };
 
@@ -72,12 +92,14 @@ class Cube: public Geometry {
         std::function<void(IntersectionInfo&)> genUV
         );
 public:
-    Vector O;
-    double side;
-    Cube(Vector O = Vector(0, 0, 0), double side = 1): O(O), side(side)
-    {
-    }
-    void beginFrame()
+    Vector O  = Vector(0, 0, 0);
+    double side = 1;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getVectorProp("O", &O);
+		pb.getDoubleProp("side", &side, 0.0);
+	}
+    void beginFrame() override
     {
         m_halfSide = side * 0.5;
     }
@@ -87,25 +109,28 @@ public:
 class CSGBase: public Geometry {
     Geometry* left, *right;
 public:
-    CSGBase(Geometry* l, Geometry *r): left(l), right(r) {}
     virtual bool intersect(Ray ray, IntersectionInfo& info) override;
     virtual bool inside(bool inA, bool inB) = 0;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.requiredProp("left");
+		pb.requiredProp("right");
+		pb.getGeometryProp("left", &left);
+		pb.getGeometryProp("right", &right);
+	}
 };
 
 class CSGUnion: public CSGBase {
 public:
-    CSGUnion(Geometry* l, Geometry *r): CSGBase(l, r) {}
     virtual bool inside(bool inA, bool inB) override { return inA || inB; }
 };
 
 class CSGInter: public CSGBase {
 public:
-    CSGInter(Geometry* l, Geometry *r): CSGBase(l, r) {}
     virtual bool inside(bool inA, bool inB) override { return inA && inB; }
 };
 
 class CSGDiff: public CSGBase { // A - B
 public:
-    CSGDiff(Geometry* l, Geometry *r): CSGBase(l, r) {}
     virtual bool inside(bool inA, bool inB) override { return inA && !inB; }
 };

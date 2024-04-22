@@ -1,0 +1,110 @@
+// Scene, as was being setup after with C++ code after lecture 8
+
+// 1. First, some global settings
+GlobalSettings {
+	frameWidth          800
+	frameHeight         600
+	ambientLight        (0.15, 0.15, 0.15)
+	maxTraceDepth		5
+	wantAA				true
+}
+
+// 2. A camera
+Camera camera {
+	pos 	     (0, 60, -120)
+	yaw           0
+	pitch        -10
+	roll          0.0
+	fov           90
+	aspectRatio   1.333
+}
+
+/*
+// top view
+Camera camera {
+	pos          (130, 85, 75)
+	yaw           11.46
+	pitch        -90
+	roll          0.0
+	fov           90
+	aspect        1.333
+}
+*/
+
+// Floor texture:
+BitmapTexture floorTex {
+	file 		"floor.bmp"
+}
+
+Lambert floorMat_diffuse {
+	texture 	floorTex
+}
+
+Reflection floorMat_glossy {
+}
+
+Layered floorMat {
+	layer floorMat_diffuse (1, 1, 1)
+//	layer floorMat_glossy (0.02, 0.02, 0.02)
+}
+
+Plane floorGeom {
+	y      0
+	limit   100
+}
+
+// 3. A floor node, using a plane as a geometry, and a flat shader with a checker texture
+Node floorNode {
+	geometry  floorGeom
+	shader    floorMat
+}
+
+Mesh dice {
+	file "geom/truncated_cube.obj"
+	faceted true
+}
+
+BumpTexture diceBump {
+	file "texture/zar-bump.bmp"
+	strength 3.2
+}
+
+Mesh teapot {
+	file "geom/teapot_lowres.obj"
+}
+
+Phong teapot_phong {
+	color		(0.9, 0.1, 0.1)
+	exponent	84.0
+}
+
+BitmapTexture dice_texture {
+	file "texture/zar-texture.bmp"
+	scaling	1
+}
+
+Lambert diceMat {
+	texture dice_texture
+}
+
+Node dice {
+	geometry   dice
+	shader     diceMat
+	translate  (40, 20, 0)
+//	rotate     (63, 0, 0)
+	scale      (5, 5, 5)
+	bump       diceBump
+}
+
+Node teapotNode {
+	geometry   teapot
+	shader     teapot_phong
+	translate  (-50, 0, 0)
+	scale      (30, 30, 30)
+	bump       diceBump
+}
+
+// 5. The cubemap environment:
+CubemapEnvironment environment {
+	folder "env/forest"
+}

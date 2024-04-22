@@ -28,6 +28,7 @@
 #include "color.h"
 #include "vector.h"
 #include "bitmap.h"
+#include "scene.h"
 
 enum CubeOrder {
 	NEGX, // 0
@@ -38,12 +39,14 @@ enum CubeOrder {
 	POSZ, // 5
 };
 
-class Environment {
+class Environment: public SceneElement {
 public:
 	bool loaded = false;
 	virtual ~Environment() {}
 	/// gets a color from the environment at the specified direction
 	virtual Color getEnvironment(const Vector& dir) = 0;
+	//
+	virtual ElementType getElementType() const override { return ELEM_ENVIRONMENT; }
 };
 
 class CubemapEnvironment: public Environment {
@@ -56,7 +59,16 @@ public:
  	/// The folder specification shouldn't include a trailing slash;
  	/// e.g. "/images/cubemaps/cathedral" is OK.
 	bool loadMaps(const char* folder);
-	CubemapEnvironment(const char* folder);
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		Environment::fillProperties(pb);
+		char folder[256];
+		if (!pb.getFilenameProp("folder", folder)) pb.requiredProp("folder");
+		if (!loadMaps(folder)) {
+			fprintf(stderr, "CubemapEnvironment: Could not load maps from `%s'\n", folder);
+		}
+	}
 
 	virtual Color getEnvironment(const Vector& dir) override;
 };

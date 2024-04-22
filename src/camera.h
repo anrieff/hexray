@@ -25,16 +25,29 @@
 #pragma once
 
 #include "vector.h"
+#include "scene.h"
 
-class Camera {
+class Camera: public SceneElement {
     Vector m_topLeft, m_topRight, m_bottomLeft;
     double m_width, m_height;
 public:
-    Vector pos;
+    Vector pos = Vector(0, 0, 0);
     double yaw = 0, pitch = 0, roll = 0; // ! in degrees
     double aspectRatio = 4.0/3.0;
     double fov = 90;
 
     void beginFrame();
     Ray getScreenRay(double x, double y);
+    //
+	virtual ElementType getElementType() const override { return ELEM_CAMERA; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		if (!pb.getVectorProp("pos", &pos))
+			pb.requiredProp("pos");
+		pb.getDoubleProp("aspectRatio", &aspectRatio, 1e-6);
+		pb.getDoubleProp("fov", &fov, 0.0001, 179);
+		pb.getDoubleProp("yaw", &yaw);
+		pb.getDoubleProp("pitch", &pitch, -90, 90);
+		pb.getDoubleProp("roll", &roll);
+	}
 };

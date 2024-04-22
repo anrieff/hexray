@@ -57,6 +57,25 @@ public:
 
 	bool loadFromOBJ(const char* filename);
 
+	void baseProperties(ParsedBlock& pb)
+	{
+		pb.getBoolProp("faceted", &faceted);
+		pb.getBoolProp("backfaceCulling", &backfaceCulling);
+	}
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		char fn[256];
+		baseProperties(pb);
+		if (pb.getFilenameProp("file", fn)) {
+			if (!loadFromOBJ(fn)) {
+				pb.signalError("Could not parse OBJ file!");
+			}
+		} else {
+			pb.requiredProp("file");
+		}
+	}
+
 	void beginRender();
 
 	virtual bool intersect(Ray ray, IntersectionInfo& info) override;

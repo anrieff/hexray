@@ -57,6 +57,9 @@ add_executable(hexray
 	src/mesh.h
 	src/matrix.cpp
 	src/matrix.h
+	src/node.h
+	src/scene.cpp
+	src/scene.h
 	src/sdl.cpp
 	src/sdl.h
 	src/shading.cpp

@@ -28,36 +28,49 @@
 #include "vector.h"
 #include "geometry.h"
 #include "bitmap.h"
+#include "scene.h"
 
 extern Vector lightPos;
 extern Color lightColor;
 extern float lightIntensity;
 
 
-class Shader {
+class Shader: public SceneElement {
 public:
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
+	virtual ElementType getElementType() const override { return ELEM_SHADER; }
 };
 
-class Texture {
+class Texture: public SceneElement {
 public:
     virtual Color sample(Ray ray, const IntersectionInfo& info) = 0;
+	virtual ElementType getElementType() const override { return ELEM_TEXTURE; }
 };
 
 class CheckerTexture: public Texture {
 public:
-    Color col1, col2;
-    float scaling;
-    CheckerTexture(const Color& c1 = Color(1, 1, 1), const Color& c2 = Color(0, 0, 0), float scaling = 20): col1(c1), col2(c2), scaling(scaling) {}
+    Color color1 = Color(1, 1, 1), color2 = Color(0, 0, 0);
+    double scaling = 20.0;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color1", &color1);
+		pb.getColorProp("color2", &color2);
+		pb.getDoubleProp("scaling", &scaling);
+	}
     virtual Color sample(Ray ray, const IntersectionInfo& info) override;
 };
 
 class BitmapTexture: public Texture {
     Bitmap m_bitmap;
 public:
-    float scaling;
-    BitmapTexture(const char* filename, float scaling = 100.0f);
+    double scaling = 100.0;
     virtual Color sample(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("scaling", &scaling);
+		if (!pb.getBitmapFileProp("file", m_bitmap))
+			pb.requiredProp("file");
+	}
 };
 
 class ConstantShader: public Shader {
@@ -70,26 +83,29 @@ public:
 
 class Lambert: public Shader {
 public:
-    Color diffuse;
+    Color diffuse = Color(0.5, 0.5, 0.5);
     Texture* diffuseTex = nullptr;
-    Lambert(
-        Color color = Color(0.5, 0.5, 0.5),
-        Texture* tex = nullptr
-        ): diffuse(color), diffuseTex(tex) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &diffuse);
+		pb.getTextureProp("texture", &diffuseTex);
+	}
 };
 
 class Phong: public Shader {
 public:
-    Color diffuse, specular;
-    float specularExponent;
-    Texture* diffuseTex;
-    Phong(
-        Color color = Color(0.5, 0.5, 0.5),
-        Color spec = Color(1, 1, 1),
-        float specularExponent = 10.0,
-        Texture* diffuseTex = nullptr);
+    Color diffuse = Color(0.5, 0.5, 0.5), specular = Color(1, 1, 1);
+    float exponent = 10.0f;
+    Texture* diffuseTex = nullptr;
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &diffuse);
+        pb.getColorProp("specular", &specular);
+		pb.getTextureProp("texture", &diffuseTex);
+		pb.getFloatProp("exponent", &exponent);
+	}
 };
 
 class Reflection: public Shader {
@@ -99,13 +115,30 @@ public:
     int numSamples = 50;
     Reflection(float g = 1.0, Color rc = Color(0.95f, 0.95f, 0.95f)): glossiness(g), reflColor(rc) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		double multiplier;
+        if (pb.getDoubleProp("multiplier", &multiplier)) {
+            reflColor = Color(multiplier, multiplier, multiplier);
+        } else pb.getColorProp("reflColor", &reflColor);
+		pb.getFloatProp("glossiness", &glossiness, 0, 1);
+		pb.getIntProp("numSamples", &numSamples, 1);
+	}
 };
 
 class Refraction: public Shader {
 public:
     Color refrColor = Color(0.95f, 0.95f, 0.95f);
-    float ior = 1.33;
+    double ior = 1.33;
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		double multiplier;
+        if (pb.getDoubleProp("multiplier", &multiplier)) {
+            refrColor = Color(multiplier, multiplier, multiplier);
+        } else pb.getColorProp("refrColor", &refrColor);
+		pb.getDoubleProp("ior", &ior, 1e-6, 10);
+	}
 };
 
 class Layered: public Shader {
@@ -118,18 +151,32 @@ class Layered: public Shader {
 public:
     void addLayer(Shader* shader, Color blend = Color(1, 1, 1), Texture* blendTex = nullptr);
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb);
 };
 
 class Fresnel: public Texture {
 public:
-    float ior = 1.33;
+    double ior = 1.33;
     virtual Color sample(Ray ray, const IntersectionInfo& info) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("ior", &ior, 1e-6, 10);
+	}
 };
 
-class BumpTexture {
+class BumpTexture: public Texture {
 	Bitmap bitmap;
+    virtual Color sample(Ray ray, const IntersectionInfo& info) override { return Color(0, 0, 0); }
 public:
 	double strength = 1, scaling = 1;
+    //
 	void modifyNormal(IntersectionInfo& info);
-	void loadFile(const char* file);
+	void beginRender() override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("strength", &strength);
+		pb.getDoubleProp("scaling", &scaling);
+		if (!pb.getBitmapFileProp("file", bitmap))
+			pb.requiredProp("file");
+	}
 };

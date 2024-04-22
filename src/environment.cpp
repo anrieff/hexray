@@ -29,11 +29,6 @@
 #include "bitmap.h"
 #include "util.h"
 
-CubemapEnvironment::CubemapEnvironment(const char* folder)
-{
-	loadMaps(folder);
-}
-
 bool CubemapEnvironment::loadMaps(const char* folder)
 {
 	// the maps are stored in order - negx, negy, negz, posx, posy, posz

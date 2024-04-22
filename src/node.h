@@ -19,41 +19,29 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File util.h
- * @Brief a few useful short functions
+ * @File node.h
+ * @Brief Contains the definition of the Node structure
  */
 #pragma once
 
-#include <stdlib.h>
-#include <math.h>
-#include <string>
-#include <vector>
-#include "constants.h"
+#include "scene.h"
+#include "shading.h"
+#include "matrix.h"
 
-#define COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+struct Node: public Intersectable, public SceneElement {
+	Geometry* geom;
+	Shader* shader;
+	Transform T;
+	Texture* bump = nullptr;
 
-inline double signOf(double x) { return x > 0 ? +1 : -1; }
-inline double sqr(double a) { return a * a; }
-inline double toRadians(double angle) { return angle / 180.0 * PI; }
-inline double toDegrees(double angle_rad) { return angle_rad / PI * 180.0; }
-inline int nearestInt(float x) { return (int) floor(x + 0.5f); }
-
-std::string extensionUpper(const char* fileName); //!< Given a filename, return its extension in UPPERCASE
-std::vector<std::string> tokenize(std::string s);
-std::vector<std::string> split(std::string s, char separator);
-
-/// returns a random floating-point number in [0..1).
-/// This is not a very good implementation. A better method is to be employed soon.
-float randFloat();
-double randDouble();
-void unitDiskSample(double& x, double& y);
-
-/// a simple RAII class for FILE* pointers.
-class FileRAII {
-	FILE* held;
-public:
-	FileRAII(FILE* init): held(init) {}
-	~FileRAII() { if (held) fclose(held); held = NULL; }
-	FileRAII(const FileRAII&) = delete;
-	FileRAII& operator = (const FileRAII&) = delete;
+	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+	//
+	virtual ElementType getElementType() const override { return ELEM_NODE; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getGeometryProp("geometry", &geom);
+		pb.getShaderProp("shader", &shader);
+		pb.getTransformProp(T);
+		pb.getTextureProp("bump", &bump);
+	}
 };

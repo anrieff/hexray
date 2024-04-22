@@ -25,6 +25,7 @@
 
 #include "geometry.h"
 #include "util.h"
+#include "node.h"
 #include <algorithm>
 
 bool Plane::intersect(Ray ray, IntersectionInfo& info)
@@ -188,4 +189,17 @@ bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
         }
     }
     return false;
+}
+
+bool Node::intersect(Ray ray, IntersectionInfo& info)
+{
+	Vector origStart = ray.start;
+	ray.start = T.untransformPoint(ray.start);
+	ray.dir = T.untransformDir(ray.dir);
+	if (!geom->intersect(ray, info)) return false;
+	//
+	info.ip = T.transformPoint(info.ip);
+	info.norm = T.transformDir(info.norm);
+	info.dist = distance(origStart, info.ip);
+	return true;
 }
