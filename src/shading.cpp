@@ -29,10 +29,6 @@
 
 #include <optional>
 
-Vector lightPos(30, 100, -70);
-Color lightColor(1, 1, 1);
-float lightIntensity = 10000.0f;
-
 Color ConstantShader::computeColor(Ray ray, const IntersectionInfo& info)
 {
     return color;
@@ -47,7 +43,7 @@ Color CheckerTexture::sample(Ray ray, const IntersectionInfo& info)
 
 static inline float getLambertTerm(const IntersectionInfo& info, double& distSqr)
 {
-    Vector lightToIp = info.ip - lightPos;
+    Vector lightToIp = info.ip - scene.settings.lightPos;
     distSqr = lightToIp.lengthSqr();
     //
     Vector dirToLight = -lightToIp;
@@ -63,8 +59,8 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
     Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
     //
     Color direct;
-    if (visible(lightPos, info.ip))
-        direct = diffuseColor * lightColor * (lambertTerm * lightIntensity / distSqr);
+    if (visible(scene.settings.lightPos, info.ip))
+        direct = diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
     else
         direct = Color(0, 0, 0);
     Color ambient = diffuseColor * scene.settings.ambientLight;
@@ -78,26 +74,20 @@ Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
     //
     Color diffuseColor = this->diffuseTex ? this->diffuseTex->sample(ray, info) : this->diffuse;
     Color result = diffuseColor * scene.settings.ambientLight;
-    if (visible(lightPos, info.ip)) {
-        result += diffuseColor * lightColor * (lambertTerm * lightIntensity / distSqr);
+    if (visible(scene.settings.lightPos, info.ip)) {
+        result += diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
         // add specular:
-        Vector fromLight = info.ip - lightPos;
+        Vector fromLight = info.ip - scene.settings.lightPos;
         fromLight.normalize();
 
         Vector reflLight = reflect(fromLight, faceforward(fromLight, info.norm));
         float cosGamma = dot(-ray.dir, reflLight);
         if (cosGamma > 0) {
-            result += specular * lightColor * pow(cosGamma, exponent);
+            result += specular * scene.settings.lightColor * pow(cosGamma, exponent);
         }
     }
     return result;
 }
-
-/*BitmapTexture::BitmapTexture(const char* filename, float scaling)
-{
-    m_bitmap.loadBMP(filename);
-    this->scaling = scaling;
-}*/
 
 Color BitmapTexture::sample(Ray ray, const IntersectionInfo& info)
 {

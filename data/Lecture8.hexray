@@ -7,6 +7,9 @@ GlobalSettings {
 	ambientLight        (0.15, 0.15, 0.15)
 	maxTraceDepth		5
 	wantAA				true
+
+	lightPos			(30, 100, -70)
+	lightIntensity		10000
 }
 
 // 2. A camera

@@ -774,6 +774,9 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getBoolProp("dbg", &dbg);
 	pb.getBoolProp("wantAA", &wantAA);
 	pb.getBoolProp("wantPrepass", &wantPrepass);
+	pb.getVectorProp("lightPos", &lightPos);
+	pb.getColorProp("lightColor", &lightColor);
+	pb.getFloatProp("lightIntensity", &lightIntensity);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)

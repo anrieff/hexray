@@ -30,11 +30,6 @@
 #include "bitmap.h"
 #include "scene.h"
 
-extern Vector lightPos;
-extern Color lightColor;
-extern float lightIntensity;
-
-
 class Shader: public SceneElement {
 public:
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
