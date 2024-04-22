@@ -39,6 +39,7 @@ public:
 class Texture: public SceneElement {
 public:
     virtual Color sample(Ray ray, const IntersectionInfo& info) = 0;
+	virtual void modifyNormal(IntersectionInfo& info) {}
 	virtual ElementType getElementType() const override { return ELEM_TEXTURE; }
 };
 
@@ -165,7 +166,7 @@ class BumpTexture: public Texture {
 public:
 	double strength = 1, scaling = 1;
     //
-	void modifyNormal(IntersectionInfo& info);
+	void modifyNormal(IntersectionInfo& info) override;
 	void beginRender() override;
 	void fillProperties(ParsedBlock& pb)
 	{
@@ -174,4 +175,27 @@ public:
 		if (!pb.getBitmapFileProp("file", bitmap))
 			pb.requiredProp("file");
 	}
+};
+
+class Const: public Shader {
+	Color color = Color(0.5, 0.5, 0.5);
+public:
+	Color computeColor(Ray ray, const IntersectionInfo& info) override { return color; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &color);
+	}
+};
+
+// a texture that generates a slight random bumps on any geometry, which computes dNdx, dNdy
+class Bumps: public Texture {
+	float strength = 1;
+    Color sample(Ray ray, const IntersectionInfo& info) override { return Color(0, 0, 0); }
+public:
+	void modifyNormal(IntersectionInfo& data) override;
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getFloatProp("strength", &strength);
+	}
+
 };

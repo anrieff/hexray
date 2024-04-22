@@ -19,53 +19,30 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File mesh.h
- * @Brief Contains the Mesh class.
+ * @File heightfield.h
+ * @Brief Contains the Heightfield geometry class.
  */
 #pragma once
 
-#include <vector>
 #include "geometry.h"
-#include "vector.h"
 #include "bbox.h"
 
-class Mesh: public Geometry {
-protected:
-	std::vector<Vector> vertices;
+class Heightfield: public Geometry {
+	std::vector<float> heights, maxH;
 	std::vector<Vector> normals;
-	std::vector<Vector> uvs;
-	std::vector<Triangle> triangles;
-	Sphere boundingSphere;
+	BBox bbox;
+	int W, H;
+	float getHeight(int x, int y) const;
+	float getHighest(int x, int y, int k) const;
+	Vector getNormal(float x, float y) const;
 
-	void computeBoundingGeometry();
-	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
-    void prepareTriangles();
+	void buildHighMap();
+
 public:
-	bool faceted = false;
-	bool backfaceCulling = false;
-
-	bool loadFromOBJ(const char* filename);
-
-	void baseProperties(ParsedBlock& pb)
-	{
-		pb.getBoolProp("faceted", &faceted);
-		pb.getBoolProp("backfaceCulling", &backfaceCulling);
-	}
-
-	void fillProperties(ParsedBlock& pb)
-	{
-		char fn[256];
-		baseProperties(pb);
-		if (pb.getFilenameProp("file", fn)) {
-			if (!loadFromOBJ(fn)) {
-				pb.signalError("Could not parse OBJ file!");
-			}
-		} else {
-			pb.requiredProp("file");
-		}
-	}
-
 	void beginRender();
-
 	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+	bool isInside(const Vector& p ) const { return false; }
+	void fillProperties(ParsedBlock& pb);
 };
+
+

@@ -49,6 +49,48 @@ void Mesh::computeBoundingGeometry()
 	for (Vector& v: vertices) boundingSphere.R = std::max(boundingSphere.R, v.length());
 }
 
+bool intersectTriangleFast(const Ray& ray, const Vector& A, const Vector& B, const Vector& C, double& dist)
+{
+	Vector AB = B - A;
+	Vector AC = C - A;
+	Vector D = -ray.dir;
+	//              0               A
+	Vector H = ray.start - A;
+
+	/* 2. Solve the equation:
+	 *
+	 * A + lambda2 * AB + lambda3 * AC = ray.start + gamma * ray.dir
+	 *
+	 * which can be rearranged as:
+	 * lambda2 * AB + lambda3 * AC + gamma * D = ray.start - A
+	 *
+	 * Which is a linear system of three rows and three unknowns, which we solve using Carmer's rule
+	 */
+
+	// Find the determinant of the left part of the equation:
+	Vector ABcrossAC = AB ^ AC;
+	double Dcr = ABcrossAC * D;
+
+	// are the ray and triangle parallel?
+	if (fabs(Dcr) < 1e-12) return false;
+
+	double lambda2 = ( ( H ^ AC) * D ) / Dcr;
+	double lambda3 = ( (AB ^  H) * D ) / Dcr;
+	double gamma   = ( ABcrossAC * H ) / Dcr;
+
+	// is intersection behind us, or too far?
+	if (gamma < 0 || gamma > dist) return false;
+
+	// is the intersection outside the triangle?
+	if (lambda2 < 0 || lambda2 > 1 || lambda3 < 0 || lambda3 > 1 || lambda2 + lambda3 > 1)
+		return false;
+
+	dist = gamma;
+
+	return true;
+}
+
+
 inline double det(const Vector& a, const Vector& b, const Vector& c)
 {
 	return (a^b) * c;

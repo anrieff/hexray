@@ -43,6 +43,8 @@ bool Plane::intersect(Ray ray, IntersectionInfo& info)
     info.norm.set(0, (ray.start.y > y) ? 1 : -1, 0);
     info.u = info.ip.x;
     info.v = info.ip.z;
+    info.dNdx = Vector(1, 0, 0);
+    info.dNdy = Vector(0, 0, 1);
     info.geom = this;
     return true;
 }

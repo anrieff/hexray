@@ -41,6 +41,7 @@ if (NOT TARGET OpenEXR::OpenEXR)
 endif()
 
 add_executable(hexray
+	src/bbox.h
 	src/bitmap.cpp
 	src/bitmap.h
 	src/camera.cpp
@@ -51,6 +52,8 @@ add_executable(hexray
 	src/environment.h
 	src/geometry.cpp
 	src/geometry.h
+	src/heightfield.cpp
+	src/heightfield.h
 	src/main.cpp
 	src/main.h
 	src/mesh.cpp

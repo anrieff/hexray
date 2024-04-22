@@ -65,13 +65,13 @@ Color raytrace(Ray ray)
 		return scene.settings.backgroundColor;
 	}
 	if (closestNode->bump) {
-		static_cast<BumpTexture*>(closestNode->bump)->modifyNormal(closestIntersection);
+		closestNode->bump->modifyNormal(closestIntersection);
 	}
 	return closestNode->shader->computeColor(ray, closestIntersection);
 }
 bool visible(Vector A, Vector B)
 {
-	double D = distance(A, B) - 1e-3;
+	double D = distance(A, B);
 	Ray ray;
 	ray.start = A;
 	ray.dir = B - A;
@@ -187,6 +187,7 @@ const char* DEFAULT_SCENE = "data/Lecture8.hexray";
 
 int main(int argc, char** argv)
 {
+	Color::init_sRGB_cache();
 	ensureDataIsVisible();
 	const char* sceneFile = DEFAULT_SCENE;
 	if (argc > 1 && strlen(argv[1]) && argv[1][0] != '-') sceneFile = argv[1];

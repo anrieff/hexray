@@ -40,6 +40,7 @@
 #include "shading.h"
 #include "environment.h"
 #include "mesh.h"
+#include "heightfield.h"
 #include "util.h"
 #include "sdl.h"
 #include "mesh.h"
@@ -800,7 +801,10 @@ SceneElement* DefaultSceneParser::newSceneElement(const char* className)
 	if (!strcmp(className, "CubemapEnvironment")) return new CubemapEnvironment;
 	if (!strcmp(className, "Camera")) return new Camera;
 	if (!strcmp(className, "Mesh")) return new Mesh;
+	if (!strcmp(className, "Heightfield")) return new Heightfield;
 	if (!strcmp(className, "BumpTexture")) return new BumpTexture;
+	if (!strcmp(className, "Bumps")) return new Bumps;
+	if (!strcmp(className, "Const")) return new Const;
 
 	return NULL;
 }

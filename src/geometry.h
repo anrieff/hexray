@@ -57,7 +57,7 @@ public:
 class Plane: public Geometry {
 public:
     double y = 0;
-    double limit = 100;
+    double limit = 1e99;
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("y", &y);

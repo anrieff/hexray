@@ -59,7 +59,7 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
     Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
     //
     Color direct;
-    if (visible(scene.settings.lightPos, info.ip))
+    if (visible(scene.settings.lightPos, info.ip + info.norm * 1e-6))
         direct = diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
     else
         direct = Color(0, 0, 0);
@@ -74,7 +74,7 @@ Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
     //
     Color diffuseColor = this->diffuseTex ? this->diffuseTex->sample(ray, info) : this->diffuse;
     Color result = diffuseColor * scene.settings.ambientLight;
-    if (visible(scene.settings.lightPos, info.ip)) {
+    if (visible(scene.settings.lightPos, info.ip + info.norm * 1e-6)) {
         result += diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
         // add specular:
         Vector fromLight = info.ip - scene.settings.lightPos;
@@ -253,4 +253,20 @@ void BumpTexture::modifyNormal(IntersectionInfo& info)
 void BumpTexture::beginRender()
 {
     bitmap.differentiate();
+}
+
+void Bumps::modifyNormal(IntersectionInfo& data)
+{
+	if (strength > 0) {
+		float freqX[3] = { 0.5f, 1.21f, 1.9f }, freqZ[3] = { 0.4f, 1.13f, 1.81f };
+		float fm = 0.2f;
+		float intensityX[3] = { 0.1f, 0.08f, 0.05f }, intensityZ[3] = { 0.1f, 0.08f, 0.05f };
+		double dx = 0, dy = 0;
+		for (int i = 0; i < 3; i++) {
+			dx += sin(fm * freqX[i] * data.u) * intensityX[i] * strength;
+			dy += sin(fm * freqZ[i] * data.v) * intensityZ[i] * strength;
+		}
+		data.norm += dx * data.dNdx + dy * data.dNdy;
+		data.norm.normalize();
+	}
 }
