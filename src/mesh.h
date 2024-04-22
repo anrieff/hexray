@@ -29,20 +29,66 @@
 #include "vector.h"
 #include "bbox.h"
 
+struct KDTreeNode {
+	Axis axis;
+	double splitPos;
+	union {
+		KDTreeNode* children;
+		std::vector<int>* triangles;
+	};
+
+	void initLeaf(const std::vector<int>& t_list)
+	{
+		axis = AXIS_NONE;
+		this->triangles = new std::vector<int>(t_list);
+	}
+
+	void initBinaryNode(Axis axis, double sp)
+	{
+		this->axis = axis;
+		splitPos = sp;
+		children = new KDTreeNode[2];
+	}
+
+	~KDTreeNode()
+	{
+		if (axis == AXIS_NONE)
+			delete triangles;
+		else
+			delete[] children;
+	}
+};
+
+struct KDTreeStats {
+	int numNodes;
+	int numLeafNodes;
+	int maxDepth;
+	long long sumDepth;
+	long long sumTriLeaf;
+
+	void printStats();
+};
+
 class Mesh: public Geometry {
 protected:
 	std::vector<Vector> vertices;
 	std::vector<Vector> normals;
 	std::vector<Vector> uvs;
 	std::vector<Triangle> triangles;
-	Sphere boundingSphere;
+	BBox bbox;
+	KDTreeNode* kdroot = nullptr;
+	KDTreeStats kdstats;
 
 	void computeBoundingGeometry();
 	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
     void prepareTriangles();
+
+	void buildKD(KDTreeNode* node, BBox bbox, const std::vector<int>& t_list, int depth);
+	bool intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, IntersectionInfo& info);
 public:
 	bool faceted = false;
 	bool backfaceCulling = false;
+	bool useKDTree = true;
 
 	bool loadFromOBJ(const char* filename);
 
@@ -50,6 +96,7 @@ public:
 	{
 		pb.getBoolProp("faceted", &faceted);
 		pb.getBoolProp("backfaceCulling", &backfaceCulling);
+		pb.getBoolProp("useKDTree", &useKDTree);
 	}
 
 	void fillProperties(ParsedBlock& pb)

@@ -36,17 +36,67 @@ using std::vector;
 using std::string;
 
 
+void KDTreeStats::printStats()
+{
+	printf("K-d Tree statistics:\n");
+	printf("   nodes            : %d\n", numNodes);
+	printf("   leaf nodes       : %d\n", numLeafNodes);
+	printf("   max depth        : %d\n", maxDepth);
+	printf("   avg depth        : %.1f\n", double(sumDepth) / numLeafNodes);
+	printf("   avg tris per leaf: %.1f\n", double(sumTriLeaf) / numLeafNodes);
+}
+
 void Mesh::beginRender()
 {
 	computeBoundingGeometry();
+	if (useKDTree) {
+		memset(&kdstats, 0, sizeof(kdstats));
+		unsigned startBuild = SDL_GetTicks();
+		kdroot = new KDTreeNode;
+		std::vector<int> t_list(triangles.size());
+		std::iota(t_list.begin(), t_list.end(), 0);
+		buildKD(kdroot, this->bbox, t_list, 0);
+		unsigned endBuild = SDL_GetTicks();
+		printf("K-d tree built in %.2fs\n", (endBuild - startBuild) / 1000.0);
+		kdstats.printStats();
+	}
 	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
+}
+
+void Mesh::buildKD(KDTreeNode* node, BBox bbox, const std::vector<int>& t_list, int depth)
+{
+	kdstats.numNodes++;
+	if (t_list.size() < 20 || depth > 64) {
+		node->initLeaf(t_list);
+		kdstats.sumTriLeaf += int(t_list.size());
+		kdstats.maxDepth = max(kdstats.maxDepth, depth);
+		kdstats.sumDepth += depth;
+		kdstats.numLeafNodes++;
+	} else {
+		Axis axis = Axis(depth % 3);											 // * THIS COULD BE IMPROVED!
+		double sp = bbox.vmin[axis] + (bbox.vmax[axis] - bbox.vmin[axis]) * 0.5; // * THIS COULD BE IMPROVED!
+		BBox L, R;
+		bbox.split(axis, sp, L, R);
+		std::vector<int> leftTris, rightTris;
+		for (auto tIdx: t_list) {
+			const Triangle& T = triangles[tIdx];
+			const Vector& a = vertices[T.v[0]];
+			const Vector& b = vertices[T.v[1]];
+			const Vector& c = vertices[T.v[2]];
+			if (L.intersectTriangle(a, b, c)) leftTris.push_back(tIdx);
+			if (R.intersectTriangle(a, b, c)) rightTris.push_back(tIdx);
+		}
+		node->initBinaryNode(axis, sp);
+		buildKD(&node->children[0], L, leftTris, depth + 1);
+		buildKD(&node->children[1], R, rightTris, depth + 1);
+	}
 }
 
 void Mesh::computeBoundingGeometry()
 {
-	boundingSphere.O = Vector(0, 0, 0);
-	boundingSphere.R = 0;
-	for (Vector& v: vertices) boundingSphere.R = std::max(boundingSphere.R, v.length());
+	bbox.makeEmpty();
+	for (int i = 1; i < int(vertices.size()); i++)
+		bbox.add(vertices[i]);
 }
 
 bool intersectTriangleFast(const Ray& ray, const Vector& A, const Vector& B, const Vector& C, double& dist)
@@ -141,22 +191,53 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	return true;
 }
 
+bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, IntersectionInfo& info)
+{
+	if (node->axis == AXIS_NONE) {
+		bool found = false;
+		// in a leaf:
+		for (auto tIdx: *node->triangles) {
+			const Triangle& T = triangles[tIdx];
+			IntersectionInfo tempInfo;
+			if (intersectTriangle(ray, T, tempInfo) && tempInfo.dist < info.dist && bbox.inside(tempInfo.ip)) {
+				info = tempInfo;
+				found = true;
+			}
+		}
+		return found;
+	} else {
+		BBox childBB[2];
+		bbox.split(node->axis, node->splitPos, childBB[0], childBB[1]);
+		int childOrder[2] = { 0, 1 };
+		if (ray.start[node->axis] > node->splitPos) std::swap(childOrder[0], childOrder[1]);
+		for (int i = 0; i < 2; i++) {
+			if (childBB[childOrder[i]].testIntersect(ray))
+				if (intersectKD(&node->children[childOrder[i]], childBB[childOrder[i]], ray, info))
+					return true;
+		}
+		return false;
+	}
+}
 
 bool Mesh::intersect(Ray ray, IntersectionInfo& info)
 {
-	if (!boundingSphere.intersect(ray, info)) return false;
+	if (!bbox.testIntersect(ray)) return false;
 	info.dist = INF;
-	for (Triangle& T: triangles) {
-		IntersectionInfo tempInfo;
-		if (intersectTriangle(ray, T, tempInfo) && tempInfo.dist < info.dist) {
-			info = tempInfo;
+	if (kdroot) {
+		return intersectKD(kdroot, bbox, ray, info);
+	} else {
+		for (Triangle& T: triangles) {
+			IntersectionInfo tempInfo;
+			if (intersectTriangle(ray, T, tempInfo) && tempInfo.dist < info.dist) {
+				info = tempInfo;
+			}
 		}
+		if (info.dist < INF) {
+			info.geom = this;
+			return true;
+		}
+		return false;
 	}
-	if (info.dist < INF) {
-		info.geom = this;
-		return true;
-	}
-	return false;
 }
 
 static int toInt(const string& s)
