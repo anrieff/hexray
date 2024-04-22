@@ -201,7 +201,8 @@ bool Node::intersect(Ray ray, IntersectionInfo& info)
 	if (!geom->intersect(ray, info)) return false;
 	//
 	info.ip = T.transformPoint(info.ip);
-	info.norm = T.transformDir(info.norm);
+	info.norm = T.normal(info.norm);
+	info.norm.normalize();
 	info.dist = distance(origStart, info.ip);
 	return true;
 }

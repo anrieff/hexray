@@ -63,6 +63,15 @@ Matrix rotationAroundZ(double angle)
 	return a;
 }
 
+static Matrix transpose(const Matrix& a)
+{
+	Matrix res;
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			res.m[i][j] = a.m[j][i];
+	return res;
+}
+
 Matrix operator * (const Matrix& a, const Matrix& b)
 {
 	Matrix c(0.0);
@@ -112,6 +121,7 @@ void Transform::loadIdentity()
 	offset.makeZero();
 	m.loadIdentity();
 	invM.loadIdentity();
+	transposedInverse.loadIdentity();
 }
 
 void Transform::scale(double x, double y, double z)
@@ -124,6 +134,7 @@ void Transform::scale(double x, double y, double z)
 
 	this->m = this->m * tmp;
 	this->invM = inverseMatrix(m);
+	transposedInverse = transpose(invM);
 }
 
 void Transform::rotate(double yaw, double pitch, double roll)
@@ -132,6 +143,7 @@ void Transform::rotate(double yaw, double pitch, double roll)
 	                    rotationAroundX(toRadians(pitch)) *
 	                    rotationAroundY(toRadians(yaw));
 	this->invM = inverseMatrix(m);
+	transposedInverse = transpose(invM);
 }
 
 void Transform::translate(const Vector& t)
@@ -139,10 +151,16 @@ void Transform::translate(const Vector& t)
 	offset += t;
 }
 
+
 // use the transform:
 Vector Transform::transformPoint(const Vector& t)
 {
 	return t * m + offset;
+}
+
+Vector Transform::normal(const Vector& n)
+{
+	return n * transposedInverse;
 }
 
 Vector Transform::untransformPoint(const Vector& t)

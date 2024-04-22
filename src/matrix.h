@@ -73,6 +73,7 @@ struct Transform {
 	Vector offset;
 	Matrix m;
 	Matrix invM;
+	Matrix transposedInverse;
 
 	Transform()
 	{
@@ -90,6 +91,7 @@ struct Transform {
 	// use the transform:
 	Vector transformPoint(const Vector& t);
 	Vector untransformPoint(const Vector& t);
+	Vector normal(const Vector& n);
 
 	Vector transformDir(const Vector& dir);
 	Vector untransformDir(const Vector& dir);
