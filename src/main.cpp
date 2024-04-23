@@ -183,7 +183,7 @@ bool renderStatic()
 	return render(true);
 }
 
-const char* DEFAULT_SCENE = "data/Lecture8.hexray";
+const char* DEFAULT_SCENE = "data/heightfield.hexray";
 
 int main(int argc, char** argv)
 {

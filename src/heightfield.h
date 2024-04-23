@@ -28,7 +28,7 @@
 #include "bbox.h"
 
 class Heightfield: public Geometry {
-	std::vector<float> heights, maxH;
+	std::vector<float> heights, maxH; // heights[y * W + x] -> texel at (x, y)
 	std::vector<Vector> normals;
 	BBox bbox;
 	int W, H;
@@ -38,7 +38,12 @@ class Heightfield: public Geometry {
 
 	void buildHighMap();
 
+	int maxK;
+	struct HighMap { float h[16]; }; // h[0]: radius 2**0 = radius 1; blocks 3x3
+	std::vector<HighMap> highMap; // highMap[y * W + x].h[k] -> getHighest(x, y, k)
+
 public:
+	bool useOptimization = true;
 	void beginRender();
 	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
 	bool isInside(const Vector& p ) const { return false; }

@@ -120,7 +120,7 @@ Lambert island_shader {
 Heightfield island {
 	file "texture/heightfield.bmp"
 	blur 2.5
-	useOptimization false
+	useOptimization true
 }
 
 Node island {

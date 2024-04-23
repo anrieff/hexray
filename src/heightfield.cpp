@@ -36,8 +36,48 @@ float Heightfield::getHeight(int x, int y) const
 	return heights[y * W + x];
 }
 
+float Heightfield::getHighest(int x, int y, int k) const
+{
+	x = min(W - 1, x);
+	y = min(H - 1, y);
+	x = max(0, x);
+	y = max(0, y);
+	return highMap[y * W + x].h[k];
+}
+
+
 void Heightfield::buildHighMap()
 {
+	highMap.resize(W * H);
+	maxK = int(ceil(log(W)/log(2.0)));
+	//
+	// handle k = 0
+	for (int y = 0; y < H; y++)
+		for (int x = 0; x < W; x++) {
+			float& result = highMap[y * W + x].h[0];
+			result = getHeight(x, y);
+			for (int dy = -1; dy <= 1; dy++)
+				for (int dx = -1; dx <= 1; dx++)
+					result = max(result, getHeight(x + dx, y + dy));
+		}
+	//
+	// XXXXX
+	// X1X2X
+	// XX.XX
+	// X3X4X
+	// XXXXX
+	for (int k = 1; k < maxK; k++) {
+		int offset = (1 << (k - 1));
+		for (int y = 0; y < H; y++) {
+			for (int x = 0; x < W; x++) {
+				float& result = highMap[y * W + x].h[k];
+				result = getHighest(x - offset, y - offset, k - 1);
+				result = max(result, getHighest(x + offset, y - offset, k - 1));
+				result = max(result, getHighest(x - offset, y + offset, k - 1));
+				result = max(result, getHighest(x + offset, y + offset, k - 1));
+			}
+		}
+	}
 }
 
 Vector Heightfield::getNormal(float x, float y) const
@@ -78,6 +118,16 @@ bool Heightfield::intersect(Ray ray, IntersectionInfo& info)
 		int x0 = (int) floor(p.x);
 		int z0 = (int) floor(p.z);
 		if (x0 < 0 || x0 >= W || z0 < 0 || z0 >= H) break; // if outside the [0..W)x[0..H) rect, get out
+
+		if (useOptimization) {
+			int k = 1;
+			while (k < maxK && p.y + step.y * (1 << k) > getHighest(x0, z0, k)) k++;
+			k--;
+			if (k > 0) {
+				p += step * (1 << k);
+				continue;
+			}
+		}
 
 		// calculate how much we need to go along ray.dir until we hit the next X voxel boundary:
 		double lx = ray.dir.x > 0 ? (ceil(p.x) - p.x) * mx : (floor(p.x) - p.x) * mx;
@@ -122,7 +172,7 @@ bool Heightfield::intersect(Ray ray, IntersectionInfo& info)
 
 void Heightfield::fillProperties(ParsedBlock& pb)
 {
-	//pb.getBoolProp("useOptimization", &useOptimization);
+	pb.getBoolProp("useOptimization", &useOptimization);
 	Bitmap bmp;
 	if (!pb.getBitmapFileProp("file", bmp)) pb.requiredProp("file");
 	W = bmp.getWidth();
@@ -201,6 +251,13 @@ void Heightfield::fillProperties(ParsedBlock& pb)
 	// fill edges of the normals array:
 	for (int y = 0; y < H; y++) normals[y * W + W - 1] = normals[y * W + W - 2];
 	for (int x = 0; x < W; x++) normals[(H - 1) * W + x] = normals[(H - 2) * W + x];
+	//
+	if (useOptimization) {
+		Uint32 startBuild = SDL_GetTicks();
+		buildHighMap();
+		Uint32 endBuild = SDL_GetTicks();
+		printf("Heightfield optimization struct built in %.2fs\n", (endBuild - startBuild) / 1000.0);
+	}
 }
 
 void Heightfield::beginRender()
