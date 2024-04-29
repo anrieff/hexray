@@ -26,8 +26,10 @@
 #include <SDL_video.h>
 #include <stdio.h>
 #include "sdl.h"
+#include "bitmap.h"
 #include "util.h"
 #include <algorithm>
+#include <filesystem>
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
@@ -89,6 +91,39 @@ static bool isWindowRedrawEvent(SDL_Event& ev)
 	return false;
 }
 
+// find an unused file name like 'hexray_0005.bmp'
+static void findUnusedFN(char fn[], const char* suffix)
+{
+	int idx = 0;
+	while (idx < 10000) {
+		sprintf(fn, "hexray_%04d.%s", idx, suffix);
+		if (!std::filesystem::exists(fn)) return;
+		idx++;
+	}
+}
+
+bool takeScreenshot(const char* filename)
+{
+	extern Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]; // from main.cpp
+
+	Bitmap bmp;
+	bmp.generateEmptyImage(frameWidth(), frameHeight());
+	for (int y = 0; y < frameHeight(); y++)
+		for (int x = 0; x < frameWidth(); x++)
+			bmp.setPixel(x, y, vfb[y][x]);
+	bool res = bmp.saveImage(filename);
+	if (res) printf("Saved a screenshot as `%s'\n", filename);
+	else printf("Failed to take a screenshot\n");
+	return res;
+}
+
+bool takeScreenshotAuto(Bitmap::OutputFormat fmt)
+{
+	char fn[256];
+	findUnusedFN(fn, fmt == Bitmap::outputFormat_BMP ? "bmp" : "exr");
+	return takeScreenshot(fn);
+}
+
 /// waits the user to indicate he/she wants to close the application (by either clicking on the "X" of the window,
 /// or by pressing ESC)
 void waitForUserExit(void)
@@ -98,6 +133,9 @@ void waitForUserExit(void)
 		while (SDL_WaitEvent(&ev)) {
 			if (isExitEvent(ev)) return;
 			if (isWindowRedrawEvent(ev)) SDL_UpdateWindowSurface(window);
+			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F12) {
+				takeScreenshotAuto(Bitmap::outputFormat_BMP);
+			}
 		}
 	}
 }
