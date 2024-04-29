@@ -51,7 +51,7 @@ Color raytrace(Ray ray)
 	if (ray.depth > scene.settings.maxTraceDepth) return Color(1, 0, 0);
 	IntersectionInfo closestIntersection;
 	closestIntersection.dist = INF;
-	Node* closestNode;
+	Node* closestNode = nullptr;
 	//
 	for (auto& node: scene.nodes) {
 		IntersectionInfo info;

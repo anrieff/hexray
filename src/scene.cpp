@@ -71,8 +71,8 @@ class ParsedBlockImpl: public ParsedBlock {
 		LineInfo() {}
 		LineInfo(int line, const char* name, const char* value): line(line)
 		{
-			strncpy(propName, name, sizeof(propName));
-			strncpy(propValue, value, sizeof(propValue));
+			strncpy(propName, name, sizeof(propName) - 1);
+			strncpy(propValue, value, sizeof(propValue) - 1);
 			recognized = false;
 		}
 	};
@@ -698,7 +698,7 @@ bool getLastToken(char* s, char* backToken)
 void stripPunctuation(char* s)
 {
 	char temp[1024];
-	strncpy(temp, s, sizeof(temp));
+	strncpy(temp, s, sizeof(temp) - 1);
 	int l = (int) strlen(temp);
 	int j = 0;
 	for (int i = 0; i < l; i++) {
