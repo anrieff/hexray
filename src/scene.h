@@ -49,6 +49,7 @@ class Texture;
 class Environment;
 class Camera;
 class Bitmap;
+class Light;
 struct Transform;
 
 class ParsedBlock;

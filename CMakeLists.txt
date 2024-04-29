@@ -54,6 +54,8 @@ add_executable(hexray
 	src/geometry.h
 	src/heightfield.cpp
 	src/heightfield.h
+	src/lights.cpp
+	src/lights.h
 	src/main.cpp
 	src/main.h
 	src/mesh.cpp

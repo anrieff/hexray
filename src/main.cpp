@@ -39,6 +39,7 @@
 #include "matrix.h"
 #include "mesh.h"
 #include "environment.h"
+#include "lights.h"
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];

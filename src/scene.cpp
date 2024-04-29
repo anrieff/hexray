@@ -45,6 +45,7 @@
 #include "sdl.h"
 #include "mesh.h"
 #include "node.h"
+#include "lights.h"
 #include <assert.h>
 using std::vector;
 using std::string;
