@@ -37,6 +37,7 @@ enum ElementType {
 	ELEM_TEXTURE,
 	ELEM_ENVIRONMENT,
 	ELEM_CAMERA,
+	ELEM_LIGHT,
 	ELEM_SETTINGS,
 };
 
@@ -267,6 +268,7 @@ struct Scene {
 	std::vector<Node*> nodes;
 	std::vector<Node*> superNodes; // also Nodes, but without a shader attached; don't represent an scene object directly
 	std::vector<Texture*> textures;
+	std::vector<Light*> lights;
 	Environment* environment = nullptr;
 	Camera* camera = nullptr;
 	GlobalSettings settings;

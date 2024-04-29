@@ -23,3 +23,16 @@
  * @Brief Implements the various models of light sources
  */
 #pragma once
+
+#include "scene.h"
+
+class Light: public SceneElement {
+protected:
+	Color color;
+	float power;
+public:
+	virtual int getNumSamples() const = 0;
+	virtual void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) = 0;
+	// from SceneElement
+	virtual ElementType getElementType() const override { return ELEM_LIGHT; }
+};

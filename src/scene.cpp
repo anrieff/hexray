@@ -496,10 +496,11 @@ bool DefaultSceneParser::parse(const char* filename, Scene* ss)
 				case ELEM_GEOMETRY: s->geometries.push_back((Geometry*)curObj); break;
 				case ELEM_SHADER: s->shaders.push_back((Shader*)curObj); break;
 				case ELEM_TEXTURE: s->textures.push_back((Texture*)curObj); break;
+				case ELEM_LIGHT: s->lights.push_back((Light*)curObj); break;
 				case ELEM_NODE: s->nodes.push_back((Node*)curObj); break;
 				case ELEM_ENVIRONMENT: s->environment = (Environment*) curObj; break;
 				case ELEM_CAMERA: s->camera = (Camera*)curObj; break;
-				default: break;
+				case ELEM_SETTINGS: break;
 			}
 		} else {
 			if (tokens.size() == 1) {
@@ -530,7 +531,7 @@ bool DefaultSceneParser::parse(const char* filename, Scene* ss)
 		return false;
 	}
 	const int element_types_order[] = {
-		ELEM_SETTINGS, ELEM_CAMERA, ELEM_ENVIRONMENT, ELEM_GEOMETRY, ELEM_TEXTURE, ELEM_SHADER, ELEM_NODE
+		ELEM_SETTINGS, ELEM_CAMERA, ELEM_ENVIRONMENT, ELEM_GEOMETRY, ELEM_TEXTURE, ELEM_SHADER, ELEM_LIGHT, ELEM_NODE
 	};
 	// process all parsed blocks, but first process all singletons, then process geometries first, etc.
 	for (int ei = 0; ei < (int) (sizeof(element_types_order) / sizeof(element_types_order[0])); ei++) {
@@ -726,14 +727,6 @@ Scene::Scene()
 	camera = NULL;
 }
 
-template<typename T>
-void disposeArray(vector<T>& objects)
-{
-	for (auto& object: objects)
-		if (object) delete object;
-	objects.clear();
-}
-
 Scene::~Scene()
 {
 	visitSceneElements([this] (SceneElement* el) { if (el && el != &this->settings) delete el; });
@@ -752,6 +745,7 @@ void Scene::visitSceneElements(std::function<void(SceneElement*)> visitor)
 	for (auto& element: shaders) visitor(element);
 	for (auto& element: superNodes) visitor(element);
 	for (auto& element: nodes) visitor(element);
+	for (auto& element: lights) visitor(element);
 	visitor(camera);
     visitor(&settings);
 	if (environment) visitor(environment);

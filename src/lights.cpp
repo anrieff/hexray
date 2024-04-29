@@ -22,3 +22,4 @@
  * @File lights.cpp
  * @Brief Implements the various models of light sources
  */
+#include "lights.h"
