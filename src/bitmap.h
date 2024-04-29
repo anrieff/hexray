@@ -58,4 +58,5 @@ public:
 	virtual bool saveImage(const char* filename); //!< Save the bitmap to an image (the format is detected from extension)
 
 	void differentiate();
+	void decompressGamma(float gamma);
 };

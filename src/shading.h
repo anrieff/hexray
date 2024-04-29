@@ -66,6 +66,11 @@ public:
 		pb.getDoubleProp("scaling", &scaling);
 		if (!pb.getBitmapFileProp("file", m_bitmap))
 			pb.requiredProp("file");
+		float assumedGamma = 1.0;
+		pb.getFloatProp("assumedGamma", &assumedGamma, 0.1f, 100.0f);
+		if (assumedGamma != 1.0f) {
+			m_bitmap.decompressGamma(assumedGamma);
+		}
 	}
 };
 

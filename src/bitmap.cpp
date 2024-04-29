@@ -317,3 +317,12 @@ void Bitmap::differentiate()
 	}
 	this->m_data = std::move(bumpTex.m_data);
 }
+
+void Bitmap::decompressGamma(float gamma)
+{
+	for (auto& pixel: m_data) {
+		if (pixel.r > 0) pixel.r = pow(pixel.r, gamma);
+		if (pixel.g > 0) pixel.g = pow(pixel.g, gamma);
+		if (pixel.b > 0) pixel.b = pow(pixel.b, gamma);
+	}
+}
