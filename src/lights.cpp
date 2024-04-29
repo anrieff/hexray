@@ -23,3 +23,24 @@
  * @Brief Implements the various models of light sources
  */
 #include "lights.h"
+
+int RectLight::getNumSamples() const
+{
+    return xSubd * ySubd;
+}
+
+void RectLight::getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color)
+{
+    // xSubd=3, ySubd=4, sampleIdx = 0..11
+    double lx = ((sampleIdx % xSubd) + randDouble()) / xSubd; //lx in [0..1]
+    double ly = ((sampleIdx / xSubd) + randDouble()) / ySubd; //ly in [0..1]
+    //
+    samplePos = T.transformPoint(Vector(lx - 0.5, 0, ly - 0.5));
+    //
+    Vector shadePos_LS = T.untransformPoint(shadePos);
+    if (shadePos_LS.y < 0) {
+        color = this->color * -shadePos_LS.y / shadePos_LS.length();
+    } else {
+        color.makeZero();
+    }
+}

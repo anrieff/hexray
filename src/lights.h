@@ -25,14 +25,57 @@
 #pragma once
 
 #include "scene.h"
+#include "matrix.h"
+#include "color.h"
 
 class Light: public SceneElement {
 protected:
-	Color color;
-	float power;
+	Color color = Color(1, 1, 1);
+	float power = 1.0f;
 public:
 	virtual int getNumSamples() const = 0;
 	virtual void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) = 0;
 	// from SceneElement
 	virtual ElementType getElementType() const override { return ELEM_LIGHT; }
+	void fillProperties(ParsedBlock& pb) override
+	{
+		pb.getColorProp("color", &color);
+		pb.getFloatProp("power", &power);
+	}
+	friend class Lambert;
+	friend class Phong;
 };
+
+class PointLight: public Light {
+	Vector pos;
+public:
+	void fillProperties(ParsedBlock& pb) override
+	{
+		Light::fillProperties(pb);
+		pb.getVectorProp("pos", &pos);
+	}
+
+	int getNumSamples() const override { return 1; }
+	void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) override
+	{
+		samplePos = this->pos;
+		color = this->color;
+	}
+};
+
+class RectLight: public Light {
+	Transform T;
+	int xSubd = 3, ySubd = 3;
+public:
+	void fillProperties(ParsedBlock& pb) override
+	{
+		Light::fillProperties(pb);
+		pb.getTransformProp(T);
+		pb.getIntProp("xSubd", &xSubd, 1, 1000);
+		pb.getIntProp("ySubd", &ySubd, 1, 1000);
+	}
+
+	int getNumSamples() const override;
+	void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) override;
+};
+

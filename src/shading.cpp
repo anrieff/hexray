@@ -25,6 +25,7 @@
 
 #include "shading.h"
 #include "main.h"
+#include "lights.h"
 #include <string.h>
 
 #include <optional>
@@ -41,9 +42,9 @@ Color CheckerTexture::sample(Ray ray, const IntersectionInfo& info)
     return ((u1 + v1) % 2 == 0) ? color1 : color2;
 }
 
-static inline float getLambertTerm(const IntersectionInfo& info, double& distSqr)
+static inline float getLambertTerm(const IntersectionInfo& info, double& distSqr, const Vector& lightPos)
 {
-    Vector lightToIp = info.ip - scene.settings.lightPos;
+    Vector lightToIp = info.ip - lightPos;
     distSqr = lightToIp.lengthSqr();
     //
     Vector dirToLight = -lightToIp;
@@ -54,15 +55,25 @@ static inline float getLambertTerm(const IntersectionInfo& info, double& distSqr
 Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
 {
     double distSqr;
-    float lambertTerm = getLambertTerm(info, distSqr);
     //
     Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
     //
-    Color direct;
-    if (visible(scene.settings.lightPos, info.ip + info.norm * 1e-6))
-        direct = diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
-    else
-        direct = Color(0, 0, 0);
+    Color direct(0, 0, 0);
+    for (auto& light: scene.lights) {
+        int n = light->getNumSamples();
+        Color thisLightSum(0, 0, 0);
+        for (int i = 0; i < n; i++) {
+            Vector lightPos;
+            Color lightColor;
+            light->getNthSample(i, info.ip, lightPos, lightColor);
+            if (lightColor.isZero() || !visible(lightPos, info.ip + info.norm * 1e-6))
+                continue;
+            //
+            float lambertTerm = getLambertTerm(info, distSqr, lightPos);
+            thisLightSum += diffuseColor * lightColor * (lambertTerm * light->power / distSqr);
+        }
+        direct += thisLightSum / n;
+    }
     Color ambient = diffuseColor * scene.settings.ambientLight;
     return direct + ambient;
 }
@@ -70,23 +81,36 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
 Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
 {
     double distSqr;
-    float lambertTerm = getLambertTerm(info, distSqr);
     //
-    Color diffuseColor = this->diffuseTex ? this->diffuseTex->sample(ray, info) : this->diffuse;
-    Color result = diffuseColor * scene.settings.ambientLight;
-    if (visible(scene.settings.lightPos, info.ip + info.norm * 1e-6)) {
-        result += diffuseColor * scene.settings.lightColor * (lambertTerm * scene.settings.lightIntensity / distSqr);
-        // add specular:
-        Vector fromLight = info.ip - scene.settings.lightPos;
-        fromLight.normalize();
+    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
+    //
+    Color direct(0, 0, 0);
+    for (auto& light: scene.lights) {
+        int n = light->getNumSamples();
+        Color thisLightSum(0, 0, 0);
+        for (int i = 0; i < n; i++) {
+            Vector lightPos;
+            Color lightColor;
+            light->getNthSample(i, info.ip, lightPos, lightColor);
+            if (lightColor.isZero() || !visible(lightPos, info.ip + info.norm * 1e-6))
+                continue;
+            //
+            float lambertTerm = getLambertTerm(info, distSqr, lightPos);
+            // add specular:
+            Vector fromLight = info.ip - lightPos;
+            fromLight.normalize();
 
-        Vector reflLight = reflect(fromLight, faceforward(fromLight, info.norm));
-        float cosGamma = dot(-ray.dir, reflLight);
-        if (cosGamma > 0) {
-            result += specular * scene.settings.lightColor * pow(cosGamma, exponent);
+            Vector reflLight = reflect(fromLight, faceforward(fromLight, info.norm));
+            float cosGamma = dot(-ray.dir, reflLight);
+            if (cosGamma > 0) {
+                thisLightSum += specular * lightColor * pow(cosGamma, exponent);
+            }
+            thisLightSum += diffuseColor * lightColor * (lambertTerm * light->power / distSqr);
         }
+        direct += thisLightSum / n;
     }
-    return result;
+    Color ambient = diffuseColor * scene.settings.ambientLight;
+    return direct + ambient;
 }
 
 Color BitmapTexture::sample(Ray ray, const IntersectionInfo& info)

@@ -247,9 +247,6 @@ struct GlobalSettings: public SceneElement {
 	// Lighting:
 	Color ambientLight = Color(0.15, 0.15, 0.15); //!< ambient color
 	Color backgroundColor = Color(0, 0 ,0);       //!< background color if there's no environment
-	Vector lightPos = Vector(30, 100, -170);
-	Color lightColor = Color(1, 1, 1);
-	float lightIntensity = 10000.0f;
 
 	// AA-related:
 	bool wantAA = true;                           //!< Is Anti-Aliasing on?
