@@ -79,9 +79,14 @@ struct Color {
 		return (ib << blueShift) | (ig << greenShift) | (ir << redShift);
 	}
 	/// make black
-	void makeZero(void)
+	inline void makeZero(void)
 	{
 		r = g = b = 0;
+	}
+	/// check if it's black
+	inline bool isZero() const
+	{
+		return (r == 0 && g == 0 && b == 0);
 	}
 	/// set the color explicitly
 	void setColor(float _r, float _g, float _b)
