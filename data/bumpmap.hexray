@@ -1,0 +1,96 @@
+//
+// An example scene, which tests bump map
+//
+
+
+// 1. First, some global settings
+GlobalSettings {
+	frameWidth          640
+	frameHeight         480
+	ambientLight        (0.5, 0.5, 0.5)
+}
+
+PointLight sun {
+	pos            (-90, 1200, -750)
+	power      1200000
+}
+
+// 2. A camera
+Camera camera {
+	pos         (45, 180, -240)
+	aspectRatio  1.33333
+	yaw             5
+	pitch          -20
+	roll            0
+	fov            60
+}
+
+// 3. The floor node:
+Plane floor {
+	y      -0.01
+	limit    200
+}
+
+BitmapTexture wood_tex {
+	file "texture/wood.bmp"
+	scaling 100
+}
+
+Lambert floor_diffuse {
+	texture wood_tex
+}
+
+Reflection mirror {
+}
+
+Layered floor_shader {
+	layer floor_diffuse (1, 1, 1)
+	layer mirror        (0.2, 0.2, 0.2)
+}
+
+Node floor {
+	geometry floor
+	shader   floor_shader
+}
+
+// A bump-mapped die:
+
+Mesh die {
+	file 	"geom/truncated_cube.obj"
+	faceted	true
+}
+
+BitmapTexture die_faces {
+	file	"texture/zar-texture.bmp"
+	scaling 1
+}
+
+BumpTexture bump_tex {
+	file	"texture/zar-bump.bmp"
+	strength 10
+}
+
+Lambert die_faces_diffuse {
+	texture	die_faces
+}
+
+Layered die_faces_shader {
+	layer die_faces_diffuse (1, 1, 1)
+	layer mirror (0.1, 0.1, 0.1)
+}
+
+Node die {
+	geometry die
+	shader   die_faces_diffuse
+	translate (0, 60, 0)
+	scale (15, 15, 15)
+	rotate (134, 0, 0)
+
+	bump bump_tex
+}
+
+// An environment:
+CubemapEnvironment {
+	folder "env/forest"
+}
+
