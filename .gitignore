@@ -36,3 +36,6 @@ build/
 
 # VSCode setup/state files
 .vscode/
+
+# Screenshots
+hexray_*.bmp
