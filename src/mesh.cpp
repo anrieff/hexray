@@ -150,8 +150,6 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 {
 	if (backfaceCulling && dot(ray.dir, t.gnormal) > 0) return false;
 	const Vector& A = vertices[t.v[0]];
-	const Vector& B = vertices[t.v[1]];
-	const Vector& C = vertices[t.v[2]];
 	const Vector& AB = t.AB;
 	const Vector& AC = t.AC;
 	Vector H = ray.start - A;

@@ -54,7 +54,7 @@ void Bitmap::generateEmptyImage(int w, int h)
 	m_width = w;
 	m_height = h;
 	m_data.resize(w * h);
-	memset(m_data.data(), 0, sizeof(m_data[0]) * w * h);
+	for (auto& pixel: m_data) pixel.makeZero();
 }
 
 Color Bitmap::getPixel(int x, int y) const
@@ -100,7 +100,8 @@ public:
 	~ImageOpenRAII()
 	{
 		if (!imageIsOk) bmp.freeMem();
-		if (fp) fclose(fp); fp = NULL;
+		if (fp) fclose(fp);
+		fp = NULL;
 	}
 };
 
@@ -259,7 +260,7 @@ bool Bitmap::loadEXR(const char* filename)
 			}
 		return true;
 	}
-	catch (Iex::BaseExc ex) {
+	catch (Iex::BaseExc& ex) {
 		m_width = m_height = 0;
 		m_data.clear();
 		return false;
@@ -280,7 +281,7 @@ bool Bitmap::saveEXR(const char* filename)
 		file.setFrameBuffer(&temp[0], 1, m_width);
 		file.writePixels(m_height);
 	}
-	catch (Iex::BaseExc ex) {
+	catch (Iex::BaseExc& ex) {
 		return false;
 	}
 	return true;

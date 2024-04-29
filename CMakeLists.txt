@@ -74,7 +74,10 @@ add_executable(hexray
 	src/vector.h
 )
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	target_compile_options(hexray PRIVATE -Wall)
 	target_link_libraries(hexray stdc++fs)
+else()
+	target_compile_options(hexray PRIVATE /W4)
 endif()
 target_link_libraries(hexray ${SDL2_LIBRARIES} OpenEXR::OpenEXR)
 
