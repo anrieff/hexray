@@ -30,10 +30,10 @@ Camera camera {
 	roll          2.3
 	fov           38      # This is probably not quite correct; should probably be closer to 46 degrees (35mm on APS-C sensor)
 	aspectRatio   1.5
-	//dof           on
-	//focalPlaneDist 25.29
-	//fNumber       2.0     # This is also not quite correct, the actual aperture was f/2.0
-	//numSamples      100
+	dof           on
+	focalPlaneDist 25.29
+	fNumber       2.0     # This is also not quite correct, the actual aperture was f/2.0
+	numSamples      100
 }
 
 //////////////////////// LIGHTS ////////////////////////////////////////////
