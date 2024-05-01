@@ -122,6 +122,7 @@ struct Color {
 	/// divides the color
 	void operator /= (float divider)
 	{
+		if (divider == 1.0f) return;
 		r /= divider;
 		g /= divider;
 		b /= divider;
@@ -171,5 +172,6 @@ inline Color operator * (float multiplier, const Color& a)
 /// divides some color
 inline Color operator / (const Color& a, float divider)
 {
+	if (divider == 1) return a;
 	return Color(a.r / divider, a.g / divider, a.b / divider);
 }

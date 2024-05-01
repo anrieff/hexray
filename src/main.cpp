@@ -166,20 +166,16 @@ bool renderDOF(bool displayProgress) // returns true if the complete frame is re
 {
 	if (scene.camera->autoFocus) {
 		Ray midRay = scene.camera->getScreenRay(frameWidth() * 0.5, frameHeight() * 0.5);
-		IntersectionInfo closestIntersection;
-		closestIntersection.dist = INF;
-		Node* closestNode = nullptr;
+		double closestIntersectionDist = INF;
 		//
 		for (auto& node: scene.nodes) {
 			IntersectionInfo info;
-			if (node->intersect(midRay, info) && info.dist < closestIntersection.dist) {
-				closestIntersection = info;
-				closestNode = node;
-			}
+			if (node->intersect(midRay, info) && info.dist < closestIntersectionDist)
+				closestIntersectionDist = info.dist;
 		}
 		//
-		if (closestIntersection.dist < INF)
-			scene.camera->focalPlaneDist = closestIntersection.dist;
+		if (closestIntersectionDist < INF)
+			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
 	Vector frontDir = scene.camera->getFrontDir();
 	for (auto& r: buckets) {
