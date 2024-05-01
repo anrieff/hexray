@@ -177,20 +177,14 @@ bool renderDOF(bool displayProgress) // returns true if the complete frame is re
 		if (closestIntersectionDist < INF)
 			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
-	Vector frontDir = scene.camera->getFrontDir();
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {
 				Color sum(0, 0, 0);
 				for (int i = 0; i < scene.camera->numSamples; i++) {
-					Ray ray = scene.camera->getScreenRay(x + randFloat(), y + randFloat());
-					double M = scene.camera->focalPlaneDist / dot(frontDir, ray.dir);
-					Vector T = ray.start + ray.dir * M;
 					double u, v;
 					unitDiskSample(u, v);
-					ray.start = scene.camera->getDOFRayStart(u, v);
-					ray.dir = normalize(T - ray.start);
-					sum += raytrace(ray);
+					sum += raytrace(scene.camera->getDOFScreenRay(x + randDouble(), y + randDouble(), u, v));
 				}
 				vfb[y][x] = sum / scene.camera->numSamples;
 			}

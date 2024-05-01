@@ -46,7 +46,7 @@ public:
 
     void beginFrame();
     Ray getScreenRay(double x, double y);
-	Vector getDOFRayStart(double u, double v);
+	Ray getDOFScreenRay(double x, double y, double u, double v);
 	Vector getFrontDir() const { return m_frontDir; }
 	double getApertureSize() const { return m_apertureSize; }
     //

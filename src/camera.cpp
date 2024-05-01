@@ -73,7 +73,12 @@ Ray Camera::getScreenRay(double x, double y)
 	return result;
 }
 
-Vector Camera::getDOFRayStart(double u, double v)
+Ray Camera::getDOFScreenRay(double x, double y, double u, double v)
 {
-	return this->pos + (u * m_apertureSize) * m_rightDir + (v * m_apertureSize) * m_upDir;
+	Ray ray = getScreenRay(x, y);
+	double M = focalPlaneDist / dot(m_frontDir, ray.dir);
+	Vector T = ray.start + ray.dir * M;
+	ray.start = this->pos + (u * m_apertureSize) * m_rightDir + (v * m_apertureSize) * m_upDir;
+	ray.dir = normalize(T - ray.start);
+	return ray;
 }
