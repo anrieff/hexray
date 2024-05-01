@@ -30,14 +30,25 @@
 class Camera: public SceneElement {
     Vector m_topLeft, m_topRight, m_bottomLeft;
     double m_width, m_height;
+	Vector m_upDir, m_rightDir;
+	Vector m_frontDir;
+	double m_apertureSize;
 public:
     Vector pos = Vector(0, 0, 0);
     double yaw = 0, pitch = 0, roll = 0; // ! in degrees
     double aspectRatio = 4.0/3.0;
     double fov = 90;
+	double fNumber = 2.0;
+	int    numSamples = 32;
+	double focalPlaneDist = 100;
+	bool   dof = false;
+	bool   autoFocus = false;
 
     void beginFrame();
     Ray getScreenRay(double x, double y);
+	Vector getDOFRayStart(double u, double v);
+	Vector getFrontDir() const { return m_frontDir; }
+	double getApertureSize() const { return m_apertureSize; }
     //
 	virtual ElementType getElementType() const override { return ELEM_CAMERA; }
 	void fillProperties(ParsedBlock& pb)
@@ -49,5 +60,10 @@ public:
 		pb.getDoubleProp("yaw", &yaw);
 		pb.getDoubleProp("pitch", &pitch, -90, 90);
 		pb.getDoubleProp("roll", &roll);
+		pb.getDoubleProp("fNumber", &fNumber, 0.5, 128.0);
+		pb.getIntProp("numSamples", &numSamples, 1);
+		pb.getDoubleProp("focalPlaneDist", &focalPlaneDist, 1e-3, 1e+6);
+		pb.getBoolProp("dof", &dof);
+		pb.getBoolProp("autoFocus", &autoFocus);
 	}
 };

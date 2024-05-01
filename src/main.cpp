@@ -118,7 +118,7 @@ static void detectAApixels()
 	}
 }
 
-bool render(bool displayProgress) // returns true if the complete frame is rendered
+bool renderNoDOF(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
 		{ 0.0f, 0.0f },
@@ -162,6 +162,54 @@ bool render(bool displayProgress) // returns true if the complete frame is rende
 	return true;
 }
 
+bool renderDOF(bool displayProgress) // returns true if the complete frame is rendered
+{
+	if (scene.camera->autoFocus) {
+		Ray midRay = scene.camera->getScreenRay(frameWidth() * 0.5, frameHeight() * 0.5);
+		IntersectionInfo closestIntersection;
+		closestIntersection.dist = INF;
+		Node* closestNode = nullptr;
+		//
+		for (auto& node: scene.nodes) {
+			IntersectionInfo info;
+			if (node->intersect(midRay, info) && info.dist < closestIntersection.dist) {
+				closestIntersection = info;
+				closestNode = node;
+			}
+		}
+		//
+		if (closestIntersection.dist < INF)
+			scene.camera->focalPlaneDist = closestIntersection.dist;
+	}
+	Vector frontDir = scene.camera->getFrontDir();
+	for (auto& r: buckets) {
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++) {
+				Color sum(0, 0, 0);
+				for (int i = 0; i < scene.camera->numSamples; i++) {
+					Ray ray = scene.camera->getScreenRay(x + randFloat(), y + randFloat());
+					double M = scene.camera->focalPlaneDist / dot(frontDir, ray.dir);
+					Vector T = ray.start + ray.dir * M;
+					double u, v;
+					unitDiskSample(u, v);
+					ray.start = scene.camera->getDOFRayStart(u, v);
+					ray.dir = normalize(T - ray.start);
+					sum += raytrace(ray);
+				}
+				vfb[y][x] = sum / scene.camera->numSamples;
+			}
+		if (displayProgress) displayVFBRect(r, vfb);
+		if (checkForUserExit()) return false;
+	}
+	return true;
+}
+
+bool render(bool displayProgress)
+{
+	if (scene.camera->dof) return renderDOF(displayProgress);
+	else return renderNoDOF(displayProgress);
+}
+
 // makes sure we see the "data" dir:
 static void ensureDataIsVisible()
 {
@@ -184,7 +232,7 @@ bool renderStatic()
 	return render(true);
 }
 
-const char* DEFAULT_SCENE = "data/boxed.hexray";
+const char* DEFAULT_SCENE = "data/meshes.hexray";
 
 int main(int argc, char** argv)
 {
