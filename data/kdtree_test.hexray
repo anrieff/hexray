@@ -14,12 +14,6 @@ PointLight l1 {
 	power  130000
 }
 
-PointLight l2 {
-	pos	   (320, 160, 80)
-	color (0, 0, 1)
-	power  530000
-}
-
 Camera camera {
 	pos 	     (30, 100, -110)
 	aspectRatio   1.33333
@@ -85,8 +79,8 @@ Lambert teapot_tex {
  * 3) change the "useKDTree" flag to test the speed with or without the K-d tree
 */
 Mesh teapot {
-	file "geom/teapot_lowres.obj"
-//	file "geom/teapot_hires.obj"
+//	file "geom/teapot_lowres.obj"
+	file "geom/teapot_hires.obj"
 	useKDTree true
 }
 
