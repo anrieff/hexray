@@ -90,6 +90,7 @@ public:
 	bool backfaceCulling = false;
 	bool useKDTree = true;
 	bool autoSmooth = false;
+	bool recenter = false;
 
 	~Mesh();
 
@@ -101,6 +102,7 @@ public:
 		pb.getBoolProp("backfaceCulling", &backfaceCulling);
 		pb.getBoolProp("useKDTree", &useKDTree);
 		pb.getBoolProp("autoSmooth", &autoSmooth);
+		pb.getBoolProp("recenter", &recenter);
 	}
 
 	void fillProperties(ParsedBlock& pb)
