@@ -43,10 +43,11 @@ public:
 	double focalPlaneDist = 100;
 	bool   dof = false;
 	bool   autoFocus = false;
+	double stereoSeparation = 0;
 
     void beginFrame();
-    Ray getScreenRay(double x, double y);
-	Ray getDOFScreenRay(double x, double y, double u, double v);
+    Ray getScreenRay(double x, double y, double stereoOffset = 0.0);
+	Ray getDOFScreenRay(double x, double y, double u, double v, double stereoOffset = 0.0);
 	Vector getFrontDir() const { return m_frontDir; }
 	double getApertureSize() const { return m_apertureSize; }
     //
@@ -65,5 +66,6 @@ public:
 		pb.getDoubleProp("focalPlaneDist", &focalPlaneDist, 1e-3, 1e+6);
 		pb.getBoolProp("dof", &dof);
 		pb.getBoolProp("autoFocus", &autoFocus);
+		pb.getDoubleProp("stereoSeparation", &stereoSeparation, 0.0);
 	}
 };

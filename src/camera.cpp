@@ -62,7 +62,7 @@ void Camera::beginFrame()
 	m_apertureSize = 2.5 / fNumber;
 }
 
-Ray Camera::getScreenRay(double x, double y)
+Ray Camera::getScreenRay(double x, double y, double stereoOffset)
 {
 	Ray result;
 	result.start = this->pos;
@@ -70,12 +70,14 @@ Ray Camera::getScreenRay(double x, double y)
 							   + (m_bottomLeft - m_topLeft) * (y / m_height);
 	result.dir = through - result.start;
 	result.dir.normalize();
+	if (stereoOffset != 0)
+		result.start += m_rightDir * (stereoOffset * stereoSeparation);
 	return result;
 }
 
-Ray Camera::getDOFScreenRay(double x, double y, double u, double v)
+Ray Camera::getDOFScreenRay(double x, double y, double u, double v, double stereoOffset)
 {
-	Ray ray = getScreenRay(x, y);
+	Ray ray = getScreenRay(x, y, stereoOffset);
 	double M = focalPlaneDist / dot(m_frontDir, ray.dir);
 	Vector T = ray.start + ray.dir * M;
 	ray.start = this->pos + (u * m_apertureSize) * m_rightDir + (v * m_apertureSize) * m_upDir;

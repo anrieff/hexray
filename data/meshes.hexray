@@ -26,9 +26,10 @@ Camera camera {
 	aspectRatio   1.333
 	focalPlaneDist 21.5
 	//focalPlaneDist 18000
-	dof           on
+	dof           off
 	fNumber       11.0
 	numSamples    20 // change to 50 for visually pleasing results
+	stereoSeparation 0.35
 }
 
 /*

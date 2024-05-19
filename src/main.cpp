@@ -118,6 +118,25 @@ static void detectAApixels()
 	}
 }
 
+Color traceSinglePixel(double x, double y)
+{
+	if (scene.camera->stereoSeparation == 0.0) {
+		return raytrace(scene.camera->getScreenRay(x, y));
+	} else {
+		Color left = raytrace(scene.camera->getScreenRay(x, y, -0.5));
+		Color right = raytrace(scene.camera->getScreenRay(x, y, +0.5));
+		//
+		float midLeft = left.intensity();
+		float midRight = right.intensity();
+		//
+		return Color(
+			midLeft + (left.r - midLeft) * 0.3f,
+			midRight + (right.g - midRight) * 0.3f,
+			midRight + (right.b - midRight) * 0.3f
+		);
+	}
+}
+
 bool renderNoDOF(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
@@ -133,7 +152,7 @@ bool renderNoDOF(bool displayProgress) // returns true if the complete frame is 
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++)
-				vfb[y][x] = raytrace(scene.camera->getScreenRay(x, y)); // should be "x + AA_KERNEL[0][0]", etc.
+				vfb[y][x] = traceSinglePixel(x, y); // should be "x + AA_KERNEL[0][0]", etc.
 		if (displayProgress) displayVFBRect(r, vfb);
 		if (checkForUserExit()) return false;
 	}
@@ -152,7 +171,7 @@ bool renderNoDOF(bool displayProgress) // returns true if the complete frame is 
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
 				for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
-					vfb[y][x] += raytrace(scene.camera->getScreenRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]));
+					vfb[y][x] += traceSinglePixel(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
 				vfb[y][x] *= mul;
 			}
 		if (displayProgress) displayVFBRect(r, vfb);
