@@ -89,6 +89,7 @@ public:
 	bool faceted = false;
 	bool backfaceCulling = false;
 	bool useKDTree = true;
+	bool autoSmooth = false;
 
 	bool loadFromOBJ(const char* filename);
 
@@ -97,6 +98,7 @@ public:
 		pb.getBoolProp("faceted", &faceted);
 		pb.getBoolProp("backfaceCulling", &backfaceCulling);
 		pb.getBoolProp("useKDTree", &useKDTree);
+		pb.getBoolProp("autoSmooth", &autoSmooth);
 	}
 
 	void fillProperties(ParsedBlock& pb)
