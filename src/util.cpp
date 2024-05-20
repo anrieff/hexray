@@ -99,3 +99,25 @@ void unitDiskSample(double& x, double& y)
 		y = randDouble() * 2 - 1;
 	} while (x * x + y * y > 1);
 }
+
+Vector hemisphereSample(const Vector& normal)
+{
+	double u = randDouble();
+	double v = randDouble();
+
+	double theta = 2 * PI * u;
+	double cosPhi = 2 * v - 1;
+	double sinPhi = sqrt(1 - cosPhi * cosPhi);
+
+	Vector vec(
+		cos(theta) * sinPhi,
+		cosPhi,
+		sin(theta) * sinPhi
+	);
+
+	/// restrict to the hemisphere: it is on the wrong side, just flip the result:
+	if (dot(vec, normal) < 0)
+		vec = -vec;
+
+	return vec;
+}

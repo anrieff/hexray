@@ -28,6 +28,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include "vector.h"
 #include "constants.h"
 
 #define COUNT_OF(arr) int(sizeof(arr) / sizeof(arr[0]))
@@ -46,7 +47,14 @@ std::vector<std::string> split(std::string s, char separator);
 /// This is not a very good implementation. A better method is to be employed soon.
 float randFloat();
 double randDouble();
+
+/// returns a random point (x, y) inside the unit disk (sqrt(x*x + y*y) <= 1.0)
 void unitDiskSample(double& x, double& y);
+
+/// returns a random 3D point on the unit sphere, and restricts it to the hemisphere pointed by `normal'.
+/// The returned points are evenly distributed on the (hemi)sphere surface (see "sphere point picking" problem).
+/// If we have "result = hemisphereSample(normal);", is guaranteed that dot(result, normal) >= 0.
+Vector hemisphereSample(const Vector& normal);
 
 /// a simple RAII class for FILE* pointers.
 class FileRAII {
