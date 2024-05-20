@@ -34,6 +34,7 @@ protected:
 	float power = 1.0f;
 public:
 	Color getColor() const { return color * power; }
+	virtual float getScaleFactor() const { return 1.0f; }
 	//
 	virtual int getNumSamples() const = 0;
 	virtual void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) = 0;
@@ -78,6 +79,7 @@ public:
 class RectLight: public Light {
 	Transform T;
 	int xSubd = 3, ySubd = 3;
+	float scaleFactor;
 public:
 	void fillProperties(ParsedBlock& pb) override
 	{
@@ -90,5 +92,6 @@ public:
 	int getNumSamples() const override;
 	void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) override;
 	bool intersect(const Ray& ray, double& intersectionDist) override;
+	void beginFrame() override;
+	float getScaleFactor() const override { return scaleFactor; }
 };
-

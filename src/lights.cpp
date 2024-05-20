@@ -70,3 +70,18 @@ bool RectLight::intersect(const Ray& ray, double& intersectionDist)
 	}
 	return false;
 }
+
+void RectLight::beginFrame()
+{
+	Vector pts[3];
+	for (int i = 0; i < 3; i++) {
+		pts[i].x = (i % 2) ? -0.5 : 0.5;
+		pts[i].y = 0;
+		pts[i].z = (i < 2) ? -0.5 : 0.5;
+		pts[i] = T.transformPoint(pts[i]);
+	}
+	double A = distance(pts[0], pts[1]);
+	double B = distance(pts[0], pts[2]);
+	double area = A * B;
+	scaleFactor = 1 / area;
+}

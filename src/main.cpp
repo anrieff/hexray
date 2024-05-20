@@ -72,7 +72,7 @@ std::optional<Color> TraceContext::raycast(const Ray& ray)
 	for (auto& light: scene.lights) {
 		if (light->intersect(ray, closestIntersection.dist)) {
 			hitLight = true;
-			hitLightColor = light->getColor();
+			hitLightColor = light->getColor() * light->getScaleFactor();
 		}
 	}
 	if (hitLight) return hitLightColor;
