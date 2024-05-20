@@ -14,7 +14,16 @@ Camera camera {
 	fov           90
 	aspectRatio   1.333
 }
-
+/*
+Camera camera_l_small {
+	pos          (-40, 28, 47)
+	yaw          -90
+	pitch        0
+	roll          0.0
+	fov           90
+	aspectRatio   1.333
+}
+*/
 //////////////////////// LIGHTS ////////////////////////////////////////////
 
 
@@ -29,8 +38,8 @@ RectLight l2 {
 }
 
 RectLight l_small {
-	translate  (0, 28, 50)
-	rotate     (0, -62, 0)
+	translate  (0, 28, 63)
+	rotate     (0, -88, 0)
 	scale      (10, 10, 10)
 	color	   (1, 1, 1)
 	power      4000

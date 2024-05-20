@@ -33,10 +33,21 @@ protected:
 	Color color = Color(1, 1, 1);
 	float power = 1.0f;
 public:
+	Color getColor() const { return color * power; }
+	//
 	virtual int getNumSamples() const = 0;
 	virtual void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) = 0;
 	// from SceneElement
 	virtual ElementType getElementType() const override { return ELEM_LIGHT; }
+	/**
+	 * intersects a ray with the light. The param intersectionDist is in/out;
+	 * it's behaviour is similar to Intersectable::intersect()'s treatment of distances.
+	 * @retval true, if the ray intersects the light, and the intersection distance is smaller
+	 *               than the current value of intersectionDist (which is updated upon return)
+	 * @retval false, otherwise.
+	 */
+	virtual bool intersect(const Ray& ray, double& intersectionDist) = 0;
+
 	void fillProperties(ParsedBlock& pb) override
 	{
 		pb.getColorProp("color", &color);
@@ -61,6 +72,7 @@ public:
 		samplePos = this->pos;
 		color = this->color;
 	}
+	bool intersect(const Ray& ray, double& intersectionDist) override;
 };
 
 class RectLight: public Light {
@@ -77,5 +89,6 @@ public:
 
 	int getNumSamples() const override;
 	void getNthSample(int sampleIdx, const Vector& shadePos, Vector& samplePos, Color& color) override;
+	bool intersect(const Ray& ray, double& intersectionDist) override;
 };
 

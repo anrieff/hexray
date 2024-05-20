@@ -60,6 +60,16 @@ Color raytrace(Ray ray)
 			closestNode = node;
 		}
 	}
+	// check if the closest intersection point is actually a light:
+	bool hitLight = false;
+	Color hitLightColor;
+	for (auto& light: scene.lights) {
+		if (light->intersect(ray, closestIntersection.dist)) {
+			hitLight = true;
+			hitLightColor = light->getColor();
+		}
+	}
+	if (hitLight) return hitLightColor;
 	//
 	if (closestIntersection.dist >= INF) {
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
@@ -83,6 +93,9 @@ bool visible(Vector A, Vector B)
 		if (node->intersect(ray, info) && info.dist < D) {
 			return false;
 		}
+	}
+	for (auto& light: scene.lights) {
+		if (light->intersect(ray, D)) return false;
 	}
 	//
 	return true;
@@ -241,7 +254,7 @@ bool renderStatic()
 	return render(true);
 }
 
-const char* DEFAULT_SCENE = "data/meshes.hexray";
+const char* DEFAULT_SCENE = "data/boxed.hexray";
 
 int main(int argc, char** argv)
 {

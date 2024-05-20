@@ -89,10 +89,11 @@ struct Transform {
 	void translate(const Vector& t);
 
 	// use the transform:
-	Vector transformPoint(const Vector& t);
-	Vector untransformPoint(const Vector& t);
-	Vector normal(const Vector& n);
+	Vector transformPoint(const Vector& t) const;
+	Vector untransformPoint(const Vector& t) const;
+	Vector normal(const Vector& n) const;
 
-	Vector transformDir(const Vector& dir);
-	Vector untransformDir(const Vector& dir);
+	Vector transformDir(const Vector& dir) const;
+	Vector untransformDir(const Vector& dir) const;
+	Ray untransformRay(const Ray& ray) const;
 };

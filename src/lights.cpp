@@ -24,6 +24,11 @@
  */
 #include "lights.h"
 
+bool PointLight::intersect(const Ray& ray, double& intersectionDist)
+{
+    return false; // you cannot intersect a point light.
+}
+
 int RectLight::getNumSamples() const
 {
     return xSubd * ySubd;
@@ -43,4 +48,25 @@ void RectLight::getNthSample(int sampleIdx, const Vector& shadePos, Vector& samp
     } else {
         color.makeZero();
     }
+}
+
+bool RectLight::intersect(const Ray& ray, double& intersectionDist)
+{
+	Ray ray_LS = T.untransformRay(ray);
+	// check if ray_LS (the incoming ray, transformed in local space) hits the oriented square 1x1, resting
+	// at (0, 0, 0), pointing downwards:
+	if (ray_LS.start.y >= 0) return false; // ray start is in the wrong subspace; no intersection is possible
+	if (ray_LS.dir.y <= 0) return false; // ray direction points downwards; no intersection is possible
+	double lengthToIntersection = -(ray_LS.start.y / ray_LS.dir.y); // intersect with XZ plane
+	Vector p = ray_LS.start + ray_LS.dir * lengthToIntersection;
+	if (fabs(p.x) < 0.5 && fabs(p.z) < 0.5) {
+		// the hit point is inside the 1x1 square - calculate the length to the intersection:
+		double distance = (T.transformPoint(p) - ray.start).length();
+
+		if (distance < intersectionDist) {
+			intersectionDist = distance;
+			return true; // intersection found, and it improves the current closest dist
+		}
+	}
+	return false;
 }

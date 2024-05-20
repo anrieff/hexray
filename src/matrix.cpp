@@ -153,27 +153,35 @@ void Transform::translate(const Vector& t)
 
 
 // use the transform:
-Vector Transform::transformPoint(const Vector& t)
+Vector Transform::transformPoint(const Vector& t) const
 {
 	return t * m + offset;
 }
 
-Vector Transform::normal(const Vector& n)
+Vector Transform::normal(const Vector& n) const
 {
 	return n * transposedInverse;
 }
 
-Vector Transform::untransformPoint(const Vector& t)
+Vector Transform::untransformPoint(const Vector& t) const
 {
 	return (t - offset) * invM;
 }
 
-Vector Transform::transformDir(const Vector& dir)
+Vector Transform::transformDir(const Vector& dir) const
 {
 	return normalize(dir * m);
 }
 
-Vector Transform::untransformDir(const Vector& dir)
+Vector Transform::untransformDir(const Vector& dir) const
 {
 	return normalize(dir * invM);
+}
+
+Ray Transform::untransformRay(const Ray& ray) const
+{
+	Ray result = ray;
+	result.start = untransformPoint(ray.start);
+	result.dir = untransformDir(ray.dir);
+	return result;
 }
