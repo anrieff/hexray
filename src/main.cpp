@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <filesystem>
+#include <optional>
 #include "util.h"
 #include "sdl.h"
 #include "color.h"
