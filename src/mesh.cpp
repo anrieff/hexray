@@ -71,6 +71,7 @@ void Mesh::beginRender()
 			}
 		for (int i = 1; i < (int) normals.size(); i++)
 			if (normals[i].lengthSqr() > 1e-9) normals[i].normalize();
+		faceted = false;
 	}
 	// if the object is set to be smooth-shaded, but it lacks normals, we have to revert it to "faceted":
 	if (normals.size() <= 1) faceted = true;

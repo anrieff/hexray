@@ -52,6 +52,7 @@ Mesh teapot {
 
 Mesh heart {
 	file			"geom/heart.obj"
+	autoSmooth      on
 }
 
 Mesh dice {
