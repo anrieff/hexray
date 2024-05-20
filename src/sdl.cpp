@@ -207,10 +207,13 @@ bool drawRect(Rect r, const Color& c)
 		for (int x = r.x0; x < r.x1; x++)
 			row[x] = clr;
 	}
+	return true;
+}
+
+void showUpdated(Rect r)
+{
 	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
 	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
-
-	return true;
 }
 
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
@@ -224,8 +227,7 @@ bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 		for (int x = r.x0; x < r.x1; x++)
 			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
 	}
-	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
-	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+	showUpdated(r);
 	return true;
 }
 

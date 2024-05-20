@@ -238,6 +238,8 @@ bool coarseRender()
 {
 	float mul = 1.0f / scene.settings.prepassSamples;
 	const int BLK_SIZE = 24;
+	Uint32 lastUpdate = 0;
+	int lastY = 0;
 	for (int y = 0; y < frameHeight(); y += BLK_SIZE) {
 		for (int x = 0; x < frameWidth(); x += BLK_SIZE) {
 			Color sum(0, 0, 0);
@@ -246,9 +248,18 @@ bool coarseRender()
 			}
 			Rect r(x, y, min(x + BLK_SIZE, frameWidth()), min(y + BLK_SIZE, frameHeight()));
 			drawRect(r, sum * mul);
+			// display on screen:
+			Uint32 t = SDL_GetTicks();
+			if (t - lastUpdate > 200) {
+				Rect updateRect(0, lastY, frameWidth(), min(y + BLK_SIZE, frameHeight()));
+				showUpdated(updateRect);
+				lastY = y;
+				lastUpdate = t;
+			}
 		}
 		if (checkForUserExit()) return false;
 	}
+	showUpdated(Rect(0, 0, frameWidth(), frameHeight()));
 	return true;
 }
 

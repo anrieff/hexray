@@ -55,6 +55,8 @@ std::vector<Rect> getBucketsList(int bucketSize = 64);
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]);
 /// draws a rectangle on the screen with a solid color
 bool drawRect(Rect r, const Color& c);
+/// shows any updates to the screen buffer
+void showUpdated(Rect r);
 /// draws marking "brackets" on the given rectangle on the screen
 bool markRegion(Rect r, const Color& bracketColor = Color(0, 0, 0.5f));
 /// displays a mask of pixels on top of the currently shown screen contents
