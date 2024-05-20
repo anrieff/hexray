@@ -193,6 +193,26 @@ std::vector<Rect> getBucketsList(int bucketSize)
 	return res;
 }
 
+bool drawRect(Rect r, const Color& c)
+{
+	r.clip(frameWidth(), frameHeight());
+
+	int rs = screen->format->Rshift;
+	int gs = screen->format->Gshift;
+	int bs = screen->format->Bshift;
+
+	Uint32 clr = c.toRGB32(rs, gs, bs);
+	for (int y = r.y0; y < r.y1; y++) {
+		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
+		for (int x = r.x0; x < r.x1; x++)
+			row[x] = clr;
+	}
+	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
+	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+
+	return true;
+}
+
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 {
 	r.clip(frameWidth(), frameHeight());

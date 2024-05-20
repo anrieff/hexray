@@ -51,6 +51,11 @@ int frameHeight(void); //!< returns the frame height (pixels)
 
 /// generate a list of buckets (image sub-rectangles) to be rendered, in a zigzag pattern
 std::vector<Rect> getBucketsList(int bucketSize = 64);
+/// updates a block of the screen (similar to displayVFB(), but for the specified rectangle only)
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]);
+/// draws a rectangle on the screen with a solid color
+bool drawRect(Rect r, const Color& c);
+/// draws marking "brackets" on the given rectangle on the screen
 bool markRegion(Rect r, const Color& bracketColor = Color(0, 0, 0.5f));
+/// displays a mask of pixels on top of the currently shown screen contents
 void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE]);

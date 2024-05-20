@@ -80,6 +80,7 @@ Color raytrace(Ray ray)
 	}
 	return closestNode->shader->computeColor(ray, closestIntersection);
 }
+
 bool visible(Vector A, Vector B)
 {
 	double D = distance(A, B);
