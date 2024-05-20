@@ -48,7 +48,7 @@ public:
 
 class Texture: public SceneElement {
 public:
-    virtual Color sample(Ray ray, const IntersectionInfo& info) = 0;
+    virtual Color sample(const Vector& rayDir, const IntersectionInfo& info) = 0;
 	virtual void modifyNormal(IntersectionInfo& info) {}
 	virtual ElementType getElementType() const override { return ELEM_TEXTURE; }
 };
@@ -63,14 +63,14 @@ public:
 		pb.getColorProp("color2", &color2);
 		pb.getDoubleProp("scaling", &scaling);
 	}
-    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
+    virtual Color sample(const Vector& rayDir, const IntersectionInfo& info) override;
 };
 
 class BitmapTexture: public Texture {
     Bitmap m_bitmap;
 public:
     double scaling = 100.0;
-    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
+    virtual Color sample(const Vector& rayDir, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("scaling", &scaling);
@@ -90,6 +90,7 @@ public:
     ConstantShader(Color col = Color(0.5, 0.5, 0.5)): color(col) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 };
+
 
 class Lambert: public Shader {
 public:
@@ -167,7 +168,7 @@ public:
 class Fresnel: public Texture {
 public:
     double ior = 1.33;
-    virtual Color sample(Ray ray, const IntersectionInfo& info) override;
+    virtual Color sample(const Vector& rayDir, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("ior", &ior, 1e-6, 10);
@@ -176,7 +177,7 @@ public:
 
 class BumpTexture: public Texture {
 	Bitmap bitmap;
-    virtual Color sample(Ray ray, const IntersectionInfo& info) override { return Color(0, 0, 0); }
+    virtual Color sample(const Vector& rayDir, const IntersectionInfo& info) override { return Color(0, 0, 0); }
 public:
 	double strength = 1, scaling = 1;
     //
@@ -204,7 +205,7 @@ public:
 // a texture that generates a slight random bumps on any geometry, which computes dNdx, dNdy
 class Bumps: public Texture {
 	float strength = 1;
-    Color sample(Ray ray, const IntersectionInfo& info) override { return Color(0, 0, 0); }
+    Color sample(const Vector& rayDir, const IntersectionInfo& info) override { return Color(0, 0, 0); }
 public:
 	void modifyNormal(IntersectionInfo& data) override;
 	void fillProperties(ParsedBlock& pb)

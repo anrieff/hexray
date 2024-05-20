@@ -47,7 +47,7 @@ Color ConstantShader::computeColor(Ray ray, const IntersectionInfo& info)
     return color;
 }
 
-Color CheckerTexture::sample(Ray ray, const IntersectionInfo& info)
+Color CheckerTexture::sample(const Vector& rayDir, const IntersectionInfo& info)
 {
     int u1 = int(floor(info.u / scaling));
     int v1 = int(floor(info.v / scaling));
@@ -68,7 +68,7 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
 {
     double distSqr;
     //
-    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
+    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray.dir, info) : this->diffuse;
     //
     Color direct(0, 0, 0);
     for (auto& light: scene.lights) {
@@ -94,7 +94,7 @@ Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
 {
     double distSqr;
     //
-    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray, info) : this->diffuse;
+    Color diffuseColor = this->diffuseTex ? diffuseTex->sample(ray.dir, info) : this->diffuse;
     //
     Color direct(0, 0, 0);
     for (auto& light: scene.lights) {
@@ -125,7 +125,7 @@ Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
     return direct + ambient;
 }
 
-Color BitmapTexture::sample(Ray ray, const IntersectionInfo& info)
+Color BitmapTexture::sample(const Vector& rayDir, const IntersectionInfo& info)
 {
     float u = (info.u / scaling);
     float v = (info.v / scaling);
@@ -247,7 +247,7 @@ Color Layered::computeColor(Ray ray, const IntersectionInfo& info)
 {
     Color col(0, 0, 0);
     for (auto& layer: m_layers) {
-        Color blend = layer.blendTex ? layer.blendTex->sample(ray, info) : layer.blend;
+        Color blend = layer.blendTex ? layer.blendTex->sample(ray.dir, info) : layer.blend;
         Color fromShader = layer.shader->computeColor(ray, info);
         col = col * (Color(1, 1, 1) - blend) + fromShader * blend;
     }
@@ -261,10 +261,10 @@ inline float fresnelSchlickApprox(float NdotI, float ior)
     return f + (1 - f) * pow(x, 5.0f);
 }
 
-Color Fresnel::sample(Ray ray, const IntersectionInfo& info)
+Color Fresnel::sample(const Vector& rayDir, const IntersectionInfo& info)
 {
     float eta = ior;
-    float NdotI = dot(ray.dir, info.norm);
+    float NdotI = dot(rayDir, info.norm);
     if (NdotI > 0)
         eta = 1/eta;
     else
