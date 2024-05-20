@@ -253,7 +253,7 @@ struct GlobalSettings: public SceneElement {
 
 	int maxTraceDepth = 8;                        //!< Maximum recursion depth
 	bool dbg = false;                             //!< A debugging flag (if on, various raytracing-related procedures will dump debug info to stdout).
-	bool wantPrepass = true;                      //!< Coarse resolution pre-pass required (defaults to true)
+	int prepassSamples = 5;                       //!< Coarse resolution pre-pass required (defaults to true)
 
 	void fillProperties(ParsedBlock& pb);
 	ElementType getElementType() const { return ELEM_SETTINGS; }

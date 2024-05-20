@@ -132,13 +132,20 @@ static void detectAApixels()
 	}
 }
 
-Color traceSinglePixel(double x, double y)
+std::function<Color(Ray)> traceFunction;
+std::function<Ray(double, double, double, double, double)> rayGenerator;
+
+Color traceSingleRay(double x, double y, bool fast = false)
 {
-	if (scene.camera->stereoSeparation == 0.0) {
-		return raytrace(scene.camera->getScreenRay(x, y));
+	double u, v;
+	if (scene.camera->dof) unitDiskSample(u, v);
+	//sum += raytrace(scene.camera->getDOFScreenRay(x + randDouble(), y + randDouble(), u, v));
+
+	if (fast || scene.camera->stereoSeparation == 0.0) {
+		return traceFunction(rayGenerator(x, y, u, v, 0));
 	} else {
-		Color left = raytrace(scene.camera->getScreenRay(x, y, -0.5));
-		Color right = raytrace(scene.camera->getScreenRay(x, y, +0.5));
+		Color left = traceFunction(rayGenerator(x, y, u, v, -0.5));
+		Color right = traceFunction(rayGenerator(x, y, u, v, +0.5));
 		//
 		float midLeft = left.intensity();
 		float midRight = right.intensity();
@@ -151,7 +158,7 @@ Color traceSinglePixel(double x, double y)
 	}
 }
 
-bool renderNoDOF(bool displayProgress) // returns true if the complete frame is rendered
+bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
 		{ 0.0f, 0.0f },
@@ -166,7 +173,7 @@ bool renderNoDOF(bool displayProgress) // returns true if the complete frame is 
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++)
-				vfb[y][x] = traceSinglePixel(x, y); // should be "x + AA_KERNEL[0][0]", etc.
+				vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
 		if (displayProgress) displayVFBRect(r, vfb);
 		if (checkForUserExit()) return false;
 	}
@@ -185,7 +192,7 @@ bool renderNoDOF(bool displayProgress) // returns true if the complete frame is 
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
 				for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
-					vfb[y][x] += traceSinglePixel(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
+					vfb[y][x] += traceSingleRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
 				vfb[y][x] *= mul;
 			}
 		if (displayProgress) displayVFBRect(r, vfb);
@@ -195,7 +202,7 @@ bool renderNoDOF(bool displayProgress) // returns true if the complete frame is 
 	return true;
 }
 
-bool renderDOF(bool displayProgress) // returns true if the complete frame is rendered
+bool renderWithMonteCarlo(bool displayProgress) // returns true if the complete frame is rendered
 {
 	if (scene.camera->autoFocus) {
 		Ray midRay = scene.camera->getScreenRay(frameWidth() * 0.5, frameHeight() * 0.5);
@@ -210,16 +217,15 @@ bool renderDOF(bool displayProgress) // returns true if the complete frame is re
 		if (closestIntersectionDist < INF)
 			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
+	float mul = 1.0f / scene.camera->numSamples;
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {
 				Color sum(0, 0, 0);
 				for (int i = 0; i < scene.camera->numSamples; i++) {
-					double u, v;
-					unitDiskSample(u, v);
-					sum += raytrace(scene.camera->getDOFScreenRay(x + randDouble(), y + randDouble(), u, v));
+					sum += traceSingleRay(x + randDouble(), y + randDouble());
 				}
-				vfb[y][x] = sum / scene.camera->numSamples;
+				vfb[y][x] = sum * mul;
 			}
 		if (displayProgress) displayVFBRect(r, vfb);
 		if (checkForUserExit()) return false;
@@ -227,10 +233,32 @@ bool renderDOF(bool displayProgress) // returns true if the complete frame is re
 	return true;
 }
 
+/// render the whole frame at much lower resolution (using blocks 24x24px, and estimate each via a few rays)
+bool coarseRender()
+{
+	float mul = 1.0f / scene.settings.prepassSamples;
+	const int BLK_SIZE = 24;
+	for (int y = 0; y < frameHeight(); y += BLK_SIZE) {
+		for (int x = 0; x < frameWidth(); x += BLK_SIZE) {
+			Color sum(0, 0, 0);
+			for (int i = 0; i < scene.settings.prepassSamples; i++) {
+				sum += traceSingleRay(x + randDouble() * BLK_SIZE, y + randDouble() * BLK_SIZE);
+			}
+			Rect r(x, y, min(x + BLK_SIZE, frameWidth()), min(y + BLK_SIZE, frameHeight()));
+			drawRect(r, sum * mul);
+		}
+		if (checkForUserExit()) return false;
+	}
+	return true;
+}
+
 bool render(bool displayProgress)
 {
-	if (scene.camera->dof) return renderDOF(displayProgress);
-	else return renderNoDOF(displayProgress);
+	if (displayProgress && scene.settings.prepassSamples > 0) {
+		if (!coarseRender()) return false;
+	}
+	if (scene.camera->dof) return renderWithMonteCarlo(displayProgress);
+	else return renderWithoutMonteCarlo(displayProgress);
 }
 
 // makes sure we see the "data" dir:
@@ -267,6 +295,14 @@ int main(int argc, char** argv)
 		printf("Could not parse the scene file (%s)!\n", sceneFile);
 		return 1;
 	}
+	traceFunction = raytrace;
+	rayGenerator = scene.camera->dof ?
+		[] (double x, double y, double u, double v, double stereoOffset) {
+			return scene.camera->getDOFScreenRay(x, y, u, v, stereoOffset);
+		} :
+		[] (double x, double y, double u, double v, double stereoOffset) {
+			return scene.camera->getScreenRay(x, y, stereoOffset);
+		};
 	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
 	buckets = getBucketsList();
 	Uint32 start = SDL_GetTicks();

@@ -769,7 +769,7 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getIntProp("maxTraceDepth", &maxTraceDepth);
 	pb.getBoolProp("dbg", &dbg);
 	pb.getBoolProp("wantAA", &wantAA);
-	pb.getBoolProp("wantPrepass", &wantPrepass);
+	pb.getIntProp("prepassSamples", &prepassSamples, 0);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)
