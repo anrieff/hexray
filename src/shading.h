@@ -30,7 +30,17 @@
 #include "bitmap.h"
 #include "scene.h"
 
-class Shader: public SceneElement {
+/// interface for a Bidirectional Reflectance Distribution Function
+/// the default implementation returns red (as in "NOT IMPLEMENTED YET" warning)
+class BRDF {
+public:
+	virtual Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
+
+	virtual void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+							Ray& w_out, Color& color, float& pdf);
+};
+
+class Shader: public SceneElement, public BRDF {
 public:
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
 	virtual ElementType getElementType() const override { return ELEM_SHADER; }
@@ -80,7 +90,6 @@ public:
     ConstantShader(Color col = Color(0.5, 0.5, 0.5)): color(col) {}
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 };
-//    float scaling = 20.0f;
 
 class Lambert: public Shader {
 public:

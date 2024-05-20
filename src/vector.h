@@ -168,6 +168,12 @@ struct Ray {
 	Vector start;
 	Vector dir; // ! unit vector!
 	int depth = 0;
+	unsigned flags = 0;
+};
+
+enum RayFlags {
+	RF_DEBUG       = 0x0001,  //!< this is a debug ray
+	RF_GI_DIFFUSE  = 0x0002,  //!< last part of the path was a diffuse surface
 };
 
 inline Vector faceforward(const Vector& ray, const Vector& n)

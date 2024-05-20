@@ -27,8 +27,20 @@
 #include "main.h"
 #include "lights.h"
 #include <string.h>
-
 #include <optional>
+
+Color BRDF::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	return Color(1, 0, 0);
+}
+
+void BRDF::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Ray& w_out, Color& color, float& pdf)
+{
+	w_out.dir = Vector(1, 0, 0);
+	color = Color(1, 0, 0);
+	pdf = -1;
+}
 
 Color ConstantShader::computeColor(Ray ray, const IntersectionInfo& info)
 {

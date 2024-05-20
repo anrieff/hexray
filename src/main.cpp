@@ -46,13 +46,19 @@ bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];
 std::vector<Rect> buckets;
 const float AA_THRESH = 0.075f;
 
-Color raytrace(Ray ray)
+struct TraceContext {
+	IntersectionInfo closestIntersection;
+	Node* closestNode;
+
+	std::optional<Color> raycast(const Ray& ray);
+};
+
+std::optional<Color> TraceContext::raycast(const Ray& ray)
 {
 	if (ray.depth > scene.settings.maxTraceDepth) return Color(1, 0, 0);
-	IntersectionInfo closestIntersection;
 	closestIntersection.dist = INF;
-	Node* closestNode = nullptr;
-	//
+	closestNode = nullptr;
+	// check for ray->node intersection:
 	for (auto& node: scene.nodes) {
 		IntersectionInfo info;
 		if (node->intersect(ray, info) && info.dist < closestIntersection.dist) {
@@ -70,15 +76,26 @@ Color raytrace(Ray ray)
 		}
 	}
 	if (hitLight) return hitLightColor;
-	//
+	// no intersection? fetch from the environment, if any:
 	if (closestIntersection.dist >= INF) {
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
 		return scene.settings.backgroundColor;
 	}
+	// if we intersect a node which has a bump map applied, modify our intersection point normal:
 	if (closestNode->bump) {
 		closestNode->bump->modifyNormal(closestIntersection);
 	}
-	return closestNode->shader->computeColor(ray, closestIntersection);
+	return {};
+}
+
+Color raytrace(Ray ray)
+{
+	// Ray-tracing:
+	TraceContext tc;
+	auto earlyResult = tc.raycast(ray);
+	if (earlyResult) return *earlyResult;
+	// Shading:
+	return tc.closestNode->shader->computeColor(ray, tc.closestIntersection);
 }
 
 bool visible(Vector A, Vector B)
