@@ -82,6 +82,20 @@ void RectLight::beginFrame()
 	}
 	double A = distance(pts[0], pts[1]);
 	double B = distance(pts[0], pts[2]);
-	double area = A * B;
-	scaleFactor = 1 / area;
+	m_area = A * B;
+	scaleFactor = 1 / m_area;
+}
+
+double RectLight::getSolidAngle(const Vector& p)
+{
+	Vector lightDirCanonic(0, -1, 0);
+	//
+	Vector lightDirWorld = T.transformDir(lightDirCanonic);
+	Vector lightPosWorld = T.transformPoint(Vector(0, 0, 0));
+	Vector lightToP = p - lightPosWorld;
+	double cosTerm = dot(lightToP, lightDirWorld);
+	if (cosTerm < 0) return 0;
+	double d = lightToP.length();
+	cosTerm /= d;
+	return m_area * cosTerm / sqr(1 + d);
 }

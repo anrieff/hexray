@@ -5,6 +5,8 @@ GlobalSettings {
 	maxTraceDepth 8
 	wantAA true
 	prepassSamples 100
+	gi            on
+	numPaths      32
 }
 
 Camera camera {

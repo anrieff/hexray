@@ -48,6 +48,7 @@ public:
 	 * @retval false, otherwise.
 	 */
 	virtual bool intersect(const Ray& ray, double& intersectionDist) = 0;
+	virtual double getSolidAngle(const Vector& p) = 0;
 
 	void fillProperties(ParsedBlock& pb) override
 	{
@@ -74,12 +75,14 @@ public:
 		color = this->color;
 	}
 	bool intersect(const Ray& ray, double& intersectionDist) override;
+	double getSolidAngle(const Vector& p) override { return 0; }
 };
 
 class RectLight: public Light {
 	Transform T;
 	int xSubd = 3, ySubd = 3;
 	float scaleFactor;
+	double m_area;
 public:
 	void fillProperties(ParsedBlock& pb) override
 	{
@@ -94,4 +97,5 @@ public:
 	bool intersect(const Ray& ray, double& intersectionDist) override;
 	void beginFrame() override;
 	float getScaleFactor() const override { return scaleFactor; }
+	double getSolidAngle(const Vector& p) override;
 };

@@ -770,6 +770,8 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getBoolProp("dbg", &dbg);
 	pb.getBoolProp("wantAA", &wantAA);
 	pb.getIntProp("prepassSamples", &prepassSamples, 0);
+	pb.getBoolProp("gi", &gi);
+	pb.getIntProp("numPaths", &numPaths, 1);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)

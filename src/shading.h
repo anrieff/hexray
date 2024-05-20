@@ -102,6 +102,10 @@ public:
 		pb.getColorProp("color", &diffuse);
 		pb.getTextureProp("texture", &diffuseTex);
 	}
+	// from BRDF:
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out) override;
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+					Ray& w_out, Color& color, float& pdf) override;
 };
 
 class Phong: public Shader {
@@ -121,11 +125,15 @@ public:
 
 class Reflection: public Shader {
 public:
-    float glossiness = 1.0f;
-    Color reflColor = Color(0.95f, 0.95f, 0.95f);
-    int numSamples = 50;
-    Reflection(float g = 1.0, Color rc = Color(0.95f, 0.95f, 0.95f)): glossiness(g), reflColor(rc) {}
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	float glossiness = 1.0f;
+	Color reflColor = Color(0.95f, 0.95f, 0.95f);
+	int numSamples = 50;
+	Reflection(float g = 1.0, Color rc = Color(0.95f, 0.95f, 0.95f)): glossiness(g), reflColor(rc) {}
+	virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	// from BRDF:
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out) override;
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+					Ray& w_out, Color& color, float& pdf) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		double multiplier;
@@ -139,9 +147,13 @@ public:
 
 class Refraction: public Shader {
 public:
-    Color refrColor = Color(0.95f, 0.95f, 0.95f);
-    double ior = 1.33;
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	Color refrColor = Color(0.95f, 0.95f, 0.95f);
+	double ior = 1.33;
+	virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	// from BRDF:
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out) override;
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+					Ray& w_out, Color& color, float& pdf) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		double multiplier;

@@ -9,7 +9,8 @@ GlobalSettings {
 	maxTraceDepth 8
 	ambientLight (0.1, 0.1, 0.1)
 	gi 			on
-	numPaths 	1024
+	numPaths 	40
+	prepassSamples 300
 }
 
 Camera camera {

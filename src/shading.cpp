@@ -90,6 +90,24 @@ Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
     return direct + ambient;
 }
 
+Color Lambert::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	Color diffuseColor = this->diffuseTex ? diffuseTex->sample(w_in, x) : this->diffuse;
+	return diffuseColor * (1 / PI) * fabs(dot(w_out, x.norm));
+}
+
+void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Ray& w_out, Color& color_out, float& pdf)
+{
+	Vector N = faceforward(w_in, x.norm);
+	w_out.start = x.ip + N * 1e-6;
+	w_out.dir = hemisphereSample(N);
+	Color diffuseColor = this->diffuseTex ? diffuseTex->sample(w_in, x) : this->diffuse;
+	color_out = diffuseColor * (1 / PI) * dot(w_out.dir, N);
+	pdf = 1 / (2*PI);
+}
+
+
 Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
 {
     double distSqr;
@@ -167,6 +185,24 @@ Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)
     return raytrace(newRay) * reflColor; // account for attenuation
 }
 
+Color Reflection::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	Vector N = faceforward(w_in, x.norm);
+	if (dot(reflect(w_in, N), w_out) > 0.9999) return reflColor;
+	else return Color(0, 0, 0);
+}
+
+void Reflection::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Ray& w_out, Color& color_out, float& pdf)
+{
+	Vector N = faceforward(w_in, x.norm);
+	w_out.start = x.ip + N * 1e-6;
+	w_out.dir = reflect(w_in, N);
+	color_out = reflColor * 1e+6;
+	pdf = 1e+6;
+}
+
+
 inline std::optional<Vector> refract(const Vector& i, const Vector& n, float ior)
 {
     float NdotI = dot(i, n);
@@ -191,6 +227,36 @@ Color Refraction::computeColor(Ray ray, const IntersectionInfo& info)
 	newRay.dir = refr.value();
 	newRay.depth++;
 	return raytrace(newRay) * refrColor;
+}
+
+Color Refraction::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	Vector N = faceforward(w_in, x.norm);
+	if (dot(reflect(w_in, N), w_out) > 0.9999) return refrColor;
+	else return Color(0, 0, 0);
+}
+
+void Refraction::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Ray& w_out, Color& color_out, float& pdf)
+{
+	std::optional<Vector> refr;
+	if (dot(w_in, x.norm) < 0) {
+		// entering the geometry
+		refr = refract(w_in, x.norm, 1 / ior);
+	} else {
+		// leaving the geometry
+		refr = refract(w_in, -x.norm, ior);
+	}
+	if (!refr) {
+		color_out = Color(1, 0, 0);
+		pdf = -1;
+		return;
+	}
+
+	w_out.start = x.ip - faceforward(w_in, x.norm) * 0.000001;
+	w_out.dir = refr.value();
+	color_out = refrColor * 1e+6;
+	pdf = 1e+6;
 }
 
 void Layered::addLayer(Shader* shader, Color blend, Texture* blendTex)

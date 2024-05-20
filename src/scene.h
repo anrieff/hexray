@@ -255,6 +255,10 @@ struct GlobalSettings: public SceneElement {
 	bool dbg = false;                             //!< A debugging flag (if on, various raytracing-related procedures will dump debug info to stdout).
 	int prepassSamples = 5;                       //!< Coarse resolution pre-pass required (defaults to true)
 
+	// GI-related
+	bool gi = false;
+	int numPaths = 32;
+
 	void fillProperties(ParsedBlock& pb);
 	ElementType getElementType() const { return ELEM_SETTINGS; }
 };

@@ -31,6 +31,7 @@
 #include <optional>
 #include "util.h"
 #include "sdl.h"
+#include "main.h"
 #include "color.h"
 #include "vector.h"
 #include "camera.h"
@@ -97,6 +98,60 @@ Color raytrace(Ray ray)
 	if (earlyResult) return *earlyResult;
 	// Shading:
 	return tc.closestNode->shader->computeColor(ray, tc.closestIntersection);
+}
+
+Color pathtrace(Ray ray, Color pathMultiplier = Color(1, 1, 1))
+{
+	// early exit:
+	if (pathMultiplier.intensity() < 0.001f) return Color(0, 0, 0);
+	// Ray-tracing:
+	TraceContext tc;
+	auto earlyResult = tc.raycast(ray);
+	if (earlyResult) return (*earlyResult) * pathMultiplier;
+	// Continue building the path:
+	// Option A: continue randomly
+	Ray newRay = ray;
+	Color brdfColor;
+	float brdfPDF;
+	newRay.depth++;
+	tc.closestNode->shader->spawnRay(tc.closestIntersection, ray.dir, newRay, brdfColor, brdfPDF);
+	if (brdfPDF <= 0) return Color(0, 0, 0);
+	Color fromGI = pathtrace(newRay, pathMultiplier * brdfColor / brdfPDF);
+	return fromGI;
+	//
+	// Option B: explicit light sampling
+	// scheme:
+	// 1) choose a random light
+	// 2) pick a random point on that light
+	// 3) see if we can link the current intersection point with that light
+	// 4) if we can, evaluate the solid angle that this light projects onto the hemisphere
+	//    over our intersection point
+	// 5) evalute the BRDF (what light do we get from the proposed path extension)
+	// 6) if nonzero, add to the result from pathtrace()
+	if (scene.lights.empty()) return fromGI;
+	//
+	Light* light = scene.lights[randInt(0, scene.lights.size() - 1)];
+	//
+	const Vector& x = tc.closestIntersection.ip;
+	double solidAngle = light->getSolidAngle(x);
+	if (solidAngle <= 0) return fromGI;
+	//
+	int sampleIdx = randInt(0, light->getNumSamples() - 1);
+	Color L;
+	Vector pointOnLight;
+	light->getNthSample(sampleIdx, x, pointOnLight, L);
+	//
+	if (!visible(x + tc.closestIntersection.norm * 1e-6, pointOnLight)) return fromGI;
+	//
+	Vector w_out = pointOnLight - x;
+	w_out.normalize();
+	Color fromLight = L * tc.closestNode->shader->eval(tc.closestIntersection, ray.dir, w_out);
+	if (fromLight.intensity() <= 0) return fromGI;
+	//
+	float pChooseLight = 1.0f / scene.lights.size();
+	float pHitLight = (2*PI) / solidAngle;
+	float pThisPath = pChooseLight * pHitLight;
+	return fromGI + fromLight * pathMultiplier / pThisPath;
 }
 
 bool visible(Vector A, Vector B)
@@ -220,7 +275,7 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 	return true;
 }
 
-bool renderWithMonteCarlo(bool displayProgress) // returns true if the complete frame is rendered
+bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns true if the complete frame is rendered
 {
 	if (scene.camera->autoFocus) {
 		Ray midRay = scene.camera->getScreenRay(frameWidth() * 0.5, frameHeight() * 0.5);
@@ -235,12 +290,12 @@ bool renderWithMonteCarlo(bool displayProgress) // returns true if the complete 
 		if (closestIntersectionDist < INF)
 			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
-	float mul = 1.0f / scene.camera->numSamples;
+	float mul = 1.0f / raysPerPixel;
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {
 				Color sum(0, 0, 0);
-				for (int i = 0; i < scene.camera->numSamples; i++) {
+				for (int i = 0; i < raysPerPixel; i++) {
 					sum += traceSingleRay(x + randDouble(), y + randDouble());
 				}
 				vfb[y][x] = sum * mul;
@@ -286,7 +341,10 @@ bool render(bool displayProgress)
 	if (displayProgress && scene.settings.prepassSamples > 0) {
 		if (!coarseRender()) return false;
 	}
-	if (scene.camera->dof) return renderWithMonteCarlo(displayProgress);
+	int raysPerPixel = 0;
+	if (scene.camera->dof) raysPerPixel = scene.camera->numSamples;
+	if (scene.settings.gi) raysPerPixel = std::max(raysPerPixel, scene.settings.numPaths);
+	if (raysPerPixel > 0) return renderWithMonteCarlo(displayProgress, raysPerPixel);
 	else return renderWithoutMonteCarlo(displayProgress);
 }
 
@@ -312,7 +370,7 @@ bool renderStatic()
 	return render(true);
 }
 
-const char* DEFAULT_SCENE = "data/boxed.hexray";
+const char* DEFAULT_SCENE = "data/smallpt.hexray";
 
 int main(int argc, char** argv)
 {
@@ -325,6 +383,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	traceFunction = raytrace;
+	if (scene.settings.gi) traceFunction = [] (Ray ray) { return pathtrace(ray); };
 	rayGenerator = scene.camera->dof ?
 		[] (double x, double y, double u, double v, double stereoOffset) {
 			return scene.camera->getDOFScreenRay(x, y, u, v, stereoOffset);
