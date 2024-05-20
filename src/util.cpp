@@ -80,6 +80,12 @@ vector<string> split(string s, char separator)
 
 static std::mt19937 generator; // mersenne twister generator
 
+int randInt(int a, int b)
+{
+	static std::uniform_int_distribution<int> sampler(a, b);
+	return sampler(generator);
+}
+
 float randFloat()
 {
 	static std::uniform_real_distribution<float> sampler;

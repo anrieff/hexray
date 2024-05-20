@@ -43,8 +43,9 @@ std::string extensionUpper(const char* fileName); //!< Given a filename, return 
 std::vector<std::string> tokenize(std::string s);
 std::vector<std::string> split(std::string s, char separator);
 
+/// returns a random integer in [a..b]
+int randInt(int a, int b);
 /// returns a random floating-point number in [0..1).
-/// This is not a very good implementation. A better method is to be employed soon.
 float randFloat();
 double randDouble();
 
