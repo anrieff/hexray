@@ -82,7 +82,7 @@ static std::mt19937 generator; // mersenne twister generator
 
 int randInt(int a, int b)
 {
-	static std::uniform_int_distribution<int> sampler(a, b);
+	std::uniform_int_distribution<int> sampler(a, b);
 	return sampler(generator);
 }
 
