@@ -57,7 +57,7 @@ struct TraceContext {
 
 std::optional<Color> TraceContext::raycast(const Ray& ray)
 {
-	if (ray.depth > scene.settings.maxTraceDepth) return Color(1, 0, 0);
+	if (ray.depth > scene.settings.maxTraceDepth) return Color(0, 0, 0);
 	closestIntersection.dist = INF;
 	closestNode = nullptr;
 	// check for ray->node intersection:
@@ -77,7 +77,9 @@ std::optional<Color> TraceContext::raycast(const Ray& ray)
 			hitLightColor = light->getColor() * light->getScaleFactor();
 		}
 	}
-	if (hitLight) return hitLightColor;
+	if (hitLight) {
+		return (ray.flags & RF_GI_DIFFUSE) ? Color(0, 0, 0) : hitLightColor;
+	}
 	// no intersection? fetch from the environment, if any:
 	if (closestIntersection.dist >= INF) {
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
@@ -117,7 +119,6 @@ Color pathtrace(Ray ray, Color pathMultiplier = Color(1, 1, 1))
 	tc.closestNode->shader->spawnRay(tc.closestIntersection, ray.dir, newRay, brdfColor, brdfPDF);
 	if (brdfPDF <= 0) return Color(0, 0, 0);
 	Color fromGI = pathtrace(newRay, pathMultiplier * brdfColor / brdfPDF);
-	return fromGI;
 	//
 	// Option B: explicit light sampling
 	// scheme:
@@ -137,19 +138,22 @@ Color pathtrace(Ray ray, Color pathMultiplier = Color(1, 1, 1))
 	if (solidAngle <= 0) return fromGI;
 	//
 	int sampleIdx = randInt(0, light->getNumSamples() - 1);
-	Color L;
+	Color unused;
 	Vector pointOnLight;
-	light->getNthSample(sampleIdx, x, pointOnLight, L);
+	light->getNthSample(sampleIdx, x, pointOnLight, unused);
 	//
 	if (!visible(x + tc.closestIntersection.norm * 1e-6, pointOnLight)) return fromGI;
 	//
 	Vector w_out = pointOnLight - x;
 	w_out.normalize();
-	Color fromLight = L * tc.closestNode->shader->eval(tc.closestIntersection, ray.dir, w_out);
+	Color fromLight =
+		light->getColor() *
+		light->getScaleFactor() *
+		tc.closestNode->shader->eval(tc.closestIntersection, ray.dir, w_out);
 	if (fromLight.intensity() <= 0) return fromGI;
 	//
 	float pChooseLight = 1.0f / scene.lights.size();
-	float pHitLight = (2*PI) / solidAngle;
+	float pHitLight = 1.0f / solidAngle;
 	float pThisPath = pChooseLight * pHitLight;
 	return fromGI + fromLight * pathMultiplier / pThisPath;
 }

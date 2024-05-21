@@ -40,7 +40,7 @@ void RectLight::getNthSample(int sampleIdx, const Vector& shadePos, Vector& samp
     double lx = ((sampleIdx % xSubd) + randDouble()) / xSubd; //lx in [0..1]
     double ly = ((sampleIdx / xSubd) + randDouble()) / ySubd; //ly in [0..1]
     //
-    samplePos = T.transformPoint(Vector(lx - 0.5, 0, ly - 0.5));
+    samplePos = T.transformPoint(Vector(lx - 0.5, -1e-6, ly - 0.5));
     //
     Vector shadePos_LS = T.untransformPoint(shadePos);
     if (shadePos_LS.y < 0) {

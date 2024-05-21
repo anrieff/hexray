@@ -108,11 +108,10 @@ public:
 					Ray& w_out, Color& color, float& pdf) override;
 };
 
-class Phong: public Shader {
+class Phong: public Lambert {
 public:
-    Color diffuse = Color(0.5, 0.5, 0.5), specular = Color(1, 1, 1);
+    Color specular = Color(1, 1, 1);
     float exponent = 10.0f;
-    Texture* diffuseTex = nullptr;
     virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb)
 	{

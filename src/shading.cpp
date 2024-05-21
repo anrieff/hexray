@@ -102,6 +102,7 @@ void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 	Vector N = faceforward(w_in, x.norm);
 	w_out.start = x.ip + N * 1e-6;
 	w_out.dir = hemisphereSample(N);
+	w_out.flags |= RF_GI_DIFFUSE;
 	Color diffuseColor = this->diffuseTex ? diffuseTex->sample(w_in, x) : this->diffuse;
 	color_out = diffuseColor * (1 / PI) * dot(w_out.dir, N);
 	pdf = 1 / (2*PI);
@@ -188,7 +189,7 @@ Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)
 Color Reflection::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
 {
 	Vector N = faceforward(w_in, x.norm);
-	if (dot(reflect(w_in, N), w_out) > 0.9999) return reflColor;
+	if (dot(reflect(w_in, N), w_out) > 0.999999999) return reflColor;
 	else return Color(0, 0, 0);
 }
 
@@ -198,6 +199,7 @@ void Reflection::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 	Vector N = faceforward(w_in, x.norm);
 	w_out.start = x.ip + N * 1e-6;
 	w_out.dir = reflect(w_in, N);
+	w_out.flags &= ~RF_GI_DIFFUSE;
 	color_out = reflColor * 1e+6;
 	pdf = 1e+6;
 }
@@ -232,7 +234,7 @@ Color Refraction::computeColor(Ray ray, const IntersectionInfo& info)
 Color Refraction::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
 {
 	Vector N = faceforward(w_in, x.norm);
-	if (dot(reflect(w_in, N), w_out) > 0.9999) return refrColor;
+	if (dot(reflect(w_in, N), w_out) > 0.99999999) return refrColor;
 	else return Color(0, 0, 0);
 }
 
@@ -255,6 +257,7 @@ void Refraction::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 
 	w_out.start = x.ip - faceforward(w_in, x.norm) * 0.000001;
 	w_out.dir = refr.value();
+	w_out.flags &= ~RF_GI_DIFFUSE;
 	color_out = refrColor * 1e+6;
 	pdf = 1e+6;
 }
