@@ -69,16 +69,21 @@ std::optional<Color> TraceContext::raycast(const Ray& ray)
 		}
 	}
 	// check if the closest intersection point is actually a light:
-	bool hitLight = false;
-	Color hitLightColor;
+	std::optional<Color> hitLightColor;
 	for (auto& light: scene.lights) {
-		if (light->intersect(ray, closestIntersection.dist)) {
-			hitLight = true;
-			hitLightColor = light->getColor() * light->getScaleFactor();
+		switch (light->intersect(ray, closestIntersection.dist)) {
+			case -1: // non-emitting face of the light
+				hitLightColor = Color(0, 0, 0);
+				break;
+			case 1:  // emitting face of the light
+				hitLightColor = light->getColor() * light->getScaleFactor();
+				break;
 		}
 	}
-	if (hitLight) {
-		return (ray.flags & RF_GI_DIFFUSE) ? Color(0, 0, 0) : hitLightColor;
+	if (hitLightColor) {
+		// this check exists for path tracing: we want to forbid paths
+		// camera->...->diffuse->light; we handle these with explicit light sampling
+		return (ray.flags & RF_GI_DIFFUSE) ? Color(0, 0, 0) : *hitLightColor;
 	}
 	// no intersection? fetch from the environment, if any:
 	if (closestIntersection.dist >= INF) {
