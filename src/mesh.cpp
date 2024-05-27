@@ -168,17 +168,17 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	const Vector& AB = t.AB;
 	const Vector& AC = t.AC;
 	Vector H = ray.start - A;
-	double Dcr = det(AB, AC, -ray.dir);
+	double Dcr = dot(t.ABcrossAC, -ray.dir);
 	if (fabs(Dcr) < 1e-12) return false;
 	double rDcr = 1/Dcr;
+	double gamma = dot(t.ABcrossAC, H) * rDcr;
+	if (gamma < 0 || gamma > info.dist) return false;
 	double lambda2 = det(H, AC, -ray.dir) * rDcr;
 	if (lambda2 < 0 || lambda2 > 1) return false;
 	double lambda3 = det(AB, H, -ray.dir) * rDcr;
 	if (lambda3 < 0 || lambda3 > 1) return false;
 	double lambda1 = 1 - (lambda2 + lambda3);
 	if (lambda1 < 0 || lambda1 > 1) return false;
-	double gamma = det(AB, AC, H) * rDcr;
-	if (gamma < 0) return false;
 	//
 	info.dist = gamma;
 	info.ip = ray.start + gamma * ray.dir;
@@ -211,9 +211,7 @@ bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, Inter
 		// in a leaf:
 		for (auto tIdx: *node->triangles) {
 			const Triangle& T = triangles[tIdx];
-			IntersectionInfo tempInfo;
-			if (intersectTriangle(ray, T, tempInfo) && tempInfo.dist < info.dist && bbox.inside(tempInfo.ip)) {
-				info = tempInfo;
+			if (intersectTriangle(ray, T, info) && bbox.inside(info.ip)) {
 				found = true;
 			}
 		}
@@ -240,10 +238,7 @@ bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 		return intersectKD(kdroot, bbox, ray, info);
 	} else {
 		for (Triangle& T: triangles) {
-			IntersectionInfo tempInfo;
-			if (intersectTriangle(ray, T, tempInfo) && tempInfo.dist < info.dist) {
-				info = tempInfo;
-			}
+			intersectTriangle(ray, T,info);
 		}
 		if (info.dist < INF) {
 			info.geom = this;
@@ -367,7 +362,7 @@ void Mesh::prepareTriangles()
 		const Vector& C = vertices[t.v[2]];
 		t.AB = B - A;
 		t.AC = C - A;
-		t.gnormal = t.AB ^ t.AC;
+		t.ABcrossAC = t.gnormal = t.AB ^ t.AC;
 		t.gnormal.normalize();
 
 		const Vector& tA = uvs[t.t[0]];
