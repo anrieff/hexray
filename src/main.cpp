@@ -29,6 +29,8 @@
 #include <vector>
 #include <filesystem>
 #include <optional>
+#include <atomic>
+#include <thread>
 #include "util.h"
 #include "sdl.h"
 #include "main.h"
@@ -252,13 +254,24 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 	static const int AA_KERNEL_SIZE = int(COUNT_OF(AA_KERNEL));
 
 	// Pass 1: render without anti-aliasing
-	for (auto& r: buckets) {
-		for (int y = r.y0; y < r.y1; y++)
-			for (int x = r.x0; x < r.x1; x++)
-				vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
-		if (displayProgress) displayVFBRect(r, vfb);
-		if (checkForUserExit()) return false;
-	}
+	std::atomic<int> cursor(0);
+	int N = int(std::thread::hardware_concurrency());
+	auto workerPass1 = [N, displayProgress, &cursor] () {
+		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
+			auto& r = buckets[i];
+			for (int y = r.y0; y < r.y1; y++)
+				for (int x = r.x0; x < r.x1; x++)
+					vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
+			if (displayProgress) displayVFBRect(r, vfb);
+			if (checkForUserExit()) return;
+		}
+	};
+	std::vector<std::thread> threads(N);
+	for (int threadIdx = 1; threadIdx < N; threadIdx++)
+		threads[threadIdx] = std::thread(workerPass1);
+	workerPass1();
+	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
+
 	// Do we need AA? if not, we're done
 	if (!scene.settings.wantAA) return true;
 
@@ -268,18 +281,26 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 	if (displayProgress) markAApixels(needsAA);
 
 	// Pass 3: recompute those pixels with the AA kernel:
-	float mul = 1.0f / AA_KERNEL_SIZE;
-	for (auto& r: buckets) {
-		if (displayProgress) markRegion(r);
-		for (int y = r.y0; y < r.y1; y++)
-			for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
-				for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
-					vfb[y][x] += traceSingleRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
-				vfb[y][x] *= mul;
-			}
-		if (displayProgress) displayVFBRect(r, vfb);
-		if (checkForUserExit()) return false;
-	}
+	cursor = 0;
+	auto workerPass2 = [N, displayProgress, &cursor] () {
+		float mul = 1.0f / AA_KERNEL_SIZE;
+		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
+			auto& r = buckets[i];
+			if (displayProgress) markRegion(r);
+			for (int y = r.y0; y < r.y1; y++)
+				for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
+					for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
+						vfb[y][x] += traceSingleRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
+					vfb[y][x] *= mul;
+				}
+			if (displayProgress) displayVFBRect(r, vfb);
+			if (checkForUserExit()) return;
+		}
+	};
+	for (int threadIdx = 1; threadIdx < N; threadIdx++)
+		threads[threadIdx] = std::thread(workerPass2);
+	workerPass2();
+	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
 
 	return true;
 }
@@ -299,19 +320,30 @@ bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns tru
 		if (closestIntersectionDist < INF)
 			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
-	float mul = 1.0f / raysPerPixel;
-	for (auto& r: buckets) {
-		for (int y = r.y0; y < r.y1; y++)
-			for (int x = r.x0; x < r.x1; x++) {
-				Color sum(0, 0, 0);
-				for (int i = 0; i < raysPerPixel; i++) {
-					sum += traceSingleRay(x + randDouble(), y + randDouble());
+	std::atomic<int> cursor(0);
+	auto worker = [displayProgress, raysPerPixel, &cursor] () {
+		float mul = 1.0f / raysPerPixel;
+		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
+			auto& r = buckets[i];
+			for (int y = r.y0; y < r.y1; y++)
+				for (int x = r.x0; x < r.x1; x++) {
+					Color sum(0, 0, 0);
+					for (int i = 0; i < raysPerPixel; i++) {
+						sum += traceSingleRay(x + randDouble(), y + randDouble());
+					}
+					vfb[y][x] = sum * mul;
 				}
-				vfb[y][x] = sum * mul;
-			}
-		if (displayProgress) displayVFBRect(r, vfb);
-		if (checkForUserExit()) return false;
-	}
+			if (displayProgress) displayVFBRect(r, vfb);
+			if (checkForUserExit()) return;
+		}
+	};
+	int N = std::thread::hardware_concurrency();
+	std::vector<std::thread> threads(N);
+	for (int threadIdx = 1; threadIdx < N; threadIdx++)
+		threads[threadIdx] = std::thread(worker);
+	worker();
+	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
+
 	return true;
 }
 
