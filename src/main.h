@@ -24,5 +24,5 @@
  */
 #pragma once
 
-bool visible(Vector A, Vector B);
-Color raytrace(Ray ray);
+bool visible(const Vector& A, const Vector& B);
+Color raytrace(const Ray& ray);

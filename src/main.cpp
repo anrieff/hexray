@@ -97,7 +97,7 @@ std::optional<Color> TraceContext::raycast(const Ray& ray)
 	return {};
 }
 
-Color raytrace(Ray ray)
+Color raytrace(const Ray& ray)
 {
 	// Ray-tracing:
 	TraceContext tc;
@@ -107,7 +107,7 @@ Color raytrace(Ray ray)
 	return tc.closestNode->shader->computeColor(ray, tc.closestIntersection);
 }
 
-Color pathtrace(Ray ray, Color pathMultiplier = Color(1, 1, 1))
+Color pathtrace(const Ray& ray, Color pathMultiplier = Color(1, 1, 1))
 {
 	// early exit:
 	if (pathMultiplier.intensity() < 0.001f) return Color(0, 0, 0);
@@ -163,7 +163,7 @@ Color pathtrace(Ray ray, Color pathMultiplier = Color(1, 1, 1))
 	return fromGI + fromLight * pathMultiplier / pThisPath;
 }
 
-bool visible(Vector A, Vector B)
+bool visible(const Vector& A, const Vector& B)
 {
 	double D = distance(A, B);
 	Ray ray;

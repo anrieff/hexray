@@ -116,5 +116,5 @@ public:
 
 	void beginRender();
 
-	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+	virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
 };

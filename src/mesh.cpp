@@ -232,7 +232,7 @@ bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, Inter
 	}
 }
 
-bool Mesh::intersect(Ray ray, IntersectionInfo& info)
+bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 {
 	if (!bbox.testIntersect(ray)) return false;
 	info.dist = INF;

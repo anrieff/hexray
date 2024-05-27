@@ -42,7 +42,7 @@ void BRDF::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 	pdf = -1;
 }
 
-Color ConstantShader::computeColor(Ray ray, const IntersectionInfo& info)
+Color ConstantShader::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
     return color;
 }
@@ -64,7 +64,7 @@ static inline float getLambertTerm(const IntersectionInfo& info, double& distSqr
     return std::max(0.0, dot(info.norm, dirToLight));
 }
 
-Color Lambert::computeColor(Ray ray, const IntersectionInfo& info)
+Color Lambert::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
     double distSqr;
     //
@@ -109,7 +109,7 @@ void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 }
 
 
-Color Phong::computeColor(Ray ray, const IntersectionInfo& info)
+Color Phong::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
     double distSqr;
     //
@@ -156,7 +156,7 @@ Color BitmapTexture::sample(const Vector& rayDir, const IntersectionInfo& info)
     return m_bitmap.getFilteredPixel(u, v);
 }
 
-Color Reflection::computeColor(Ray ray, const IntersectionInfo& info)
+Color Reflection::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
     Vector n = faceforward(ray.dir, info.norm);
     Ray newRay = ray;
@@ -213,7 +213,7 @@ inline std::optional<Vector> refract(const Vector& i, const Vector& n, float ior
     return ior * i - (ior * NdotI + sqrt(k)) * n;
 }
 
-Color Refraction::computeColor(Ray ray, const IntersectionInfo& info)
+Color Refraction::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
 	std::optional<Vector> refr;
 	if (dot(ray.dir, info.norm) < 0) {
@@ -312,7 +312,7 @@ void Layered::fillProperties(ParsedBlock& pb)
 }
 
 
-Color Layered::computeColor(Ray ray, const IntersectionInfo& info)
+Color Layered::computeColor(const Ray& ray, const IntersectionInfo& info)
 {
     Color col(0, 0, 0);
     for (auto& layer: m_layers) {

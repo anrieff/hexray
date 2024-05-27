@@ -42,7 +42,7 @@ public:
 
 class Shader: public SceneElement, public BRDF {
 public:
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) = 0;
+    virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) = 0;
 	virtual ElementType getElementType() const override { return ELEM_SHADER; }
 };
 
@@ -88,7 +88,7 @@ class ConstantShader: public Shader {
 public:
     Color color;
     ConstantShader(Color col = Color(0.5, 0.5, 0.5)): color(col) {}
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+    virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 };
 
 
@@ -96,7 +96,7 @@ class Lambert: public Shader {
 public:
     Color diffuse = Color(0.5, 0.5, 0.5);
     Texture* diffuseTex = nullptr;
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+    virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getColorProp("color", &diffuse);
@@ -112,7 +112,7 @@ class Phong: public Lambert {
 public:
     Color specular = Color(1, 1, 1);
     float exponent = 10.0f;
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+    virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getColorProp("color", &diffuse);
@@ -128,7 +128,7 @@ public:
 	Color reflColor = Color(0.95f, 0.95f, 0.95f);
 	int numSamples = 50;
 	Reflection(float g = 1.0, Color rc = Color(0.95f, 0.95f, 0.95f)): glossiness(g), reflColor(rc) {}
-	virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 	// from BRDF:
 	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out) override;
 	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
@@ -148,7 +148,7 @@ class Refraction: public Shader {
 public:
 	Color refrColor = Color(0.95f, 0.95f, 0.95f);
 	double ior = 1.33;
-	virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+	virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 	// from BRDF:
 	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out) override;
 	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
@@ -172,7 +172,7 @@ class Layered: public Shader {
     std::vector<Layer> m_layers;
 public:
     void addLayer(Shader* shader, Color blend = Color(1, 1, 1), Texture* blendTex = nullptr);
-    virtual Color computeColor(Ray ray, const IntersectionInfo& info) override;
+    virtual Color computeColor(const Ray& ray, const IntersectionInfo& info) override;
 	void fillProperties(ParsedBlock& pb);
 };
 
@@ -206,7 +206,7 @@ public:
 class Const: public Shader {
 	Color color = Color(0.5, 0.5, 0.5);
 public:
-	Color computeColor(Ray ray, const IntersectionInfo& info) override { return color; }
+	Color computeColor(const Ray& ray, const IntersectionInfo& info) override { return color; }
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getColorProp("color", &color);

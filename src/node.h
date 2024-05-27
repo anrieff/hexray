@@ -34,7 +34,7 @@ struct Node: public Intersectable, public SceneElement {
 	Transform T;
 	Texture* bump = nullptr;
 
-	virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+	virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
 	//
 	virtual ElementType getElementType() const override { return ELEM_NODE; }
 	void fillProperties(ParsedBlock& pb)

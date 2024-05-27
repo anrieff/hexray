@@ -45,7 +45,7 @@ struct IntersectionInfo {
  */
 class Intersectable {
 public:
-	virtual bool intersect(Ray ray, IntersectionInfo& info) = 0;
+	virtual bool intersect(const Ray&, IntersectionInfo& info) = 0;
 };
 
 class Geometry: public Intersectable, public SceneElement {
@@ -63,7 +63,7 @@ public:
 		pb.getDoubleProp("y", &y);
 		pb.getDoubleProp("limit", &limit);
 	}
-    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+    virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
 };
 
 class Sphere: public Geometry {
@@ -77,7 +77,7 @@ public:
 		pb.getDoubleProp("R", &R, 0.0);
         pb.getDoubleProp("uvscaling", &uvscaling, 1e-6);
 	}
-    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+    virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
 };
 
 class Cube: public Geometry {
@@ -103,13 +103,13 @@ public:
     {
         m_halfSide = side * 0.5;
     }
-    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+    virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
 };
 
 class CSGBase: public Geometry {
     Geometry* left, *right;
 public:
-    virtual bool intersect(Ray ray, IntersectionInfo& info) override;
+    virtual bool intersect(const Ray& ray, IntersectionInfo& info) override;
     virtual bool inside(bool inA, bool inB) = 0;
 	void fillProperties(ParsedBlock& pb)
 	{

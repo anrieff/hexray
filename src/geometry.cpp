@@ -28,7 +28,7 @@
 #include "node.h"
 #include <algorithm>
 
-bool Plane::intersect(Ray ray, IntersectionInfo& info)
+bool Plane::intersect(const Ray& ray, IntersectionInfo& info)
 {
     if (ray.start.y > y && ray.dir.y >= 0) return false;
     if (ray.start.y < y && ray.dir.y <= 0) return false;
@@ -49,7 +49,7 @@ bool Plane::intersect(Ray ray, IntersectionInfo& info)
     return true;
 }
 
-bool Sphere::intersect(Ray ray, IntersectionInfo& info)
+bool Sphere::intersect(const Ray& ray, IntersectionInfo& info)
 {
     double A = ray.dir.lengthSqr();
     Vector H = ray.start - O;
@@ -125,7 +125,7 @@ int Cube::intersectCubeSide(
     return 0;
 }
 
-bool Cube::intersect(Ray ray, IntersectionInfo& info)
+bool Cube::intersect(const Ray& ray, IntersectionInfo& info)
 {
     auto UV_X = [] (IntersectionInfo& info) { info.u = info.ip.y; info.v = info.ip.z; };
     auto UV_Y = [] (IntersectionInfo& info) { info.u = info.ip.x; info.v = info.ip.z; };
@@ -164,7 +164,7 @@ std::vector<IntersectionInfo> findAllIntersections(Ray ray, Geometry* geom)
     return result;
 }
 
-bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
+bool CSGBase::intersect(const Ray& ray, IntersectionInfo& info)
 {
     std::vector<IntersectionInfo> xLeft = findAllIntersections(ray, left);
     std::vector<IntersectionInfo> xRight = findAllIntersections(ray, right);
@@ -193,16 +193,16 @@ bool CSGBase::intersect(Ray ray, IntersectionInfo& info)
     return false;
 }
 
-bool Node::intersect(Ray ray, IntersectionInfo& info)
+bool Node::intersect(const Ray& ray, IntersectionInfo& info)
 {
-	Vector origStart = ray.start;
-	ray.start = T.untransformPoint(ray.start);
-	ray.dir = T.untransformDir(ray.dir);
-	if (!geom->intersect(ray, info)) return false;
+	Ray tRay = ray;
+	tRay.start = T.untransformPoint(ray.start);
+	tRay.dir = T.untransformDir(ray.dir);
+	if (!geom->intersect(tRay, info)) return false;
 	//
 	info.ip = T.transformPoint(info.ip);
 	info.norm = T.normal(info.norm);
 	info.norm.normalize();
-	info.dist = distance(origStart, info.ip);
+	info.dist = distance(ray.start, info.ip);
 	return true;
 }
