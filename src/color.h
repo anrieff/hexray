@@ -123,9 +123,10 @@ struct Color {
 	void operator /= (float divider)
 	{
 		if (divider == 1.0f) return;
-		r /= divider;
-		g /= divider;
-		b /= divider;
+		float multiplier = 1.0f / divider;
+		r *= multiplier;
+		g *= multiplier;
+		b *= multiplier;
 	}
 	/// fetch r, g or b (depending on index)
 	inline const float& operator[] (int index) const
@@ -173,5 +174,6 @@ inline Color operator * (float multiplier, const Color& a)
 inline Color operator / (const Color& a, float divider)
 {
 	if (divider == 1) return a;
-	return Color(a.r / divider, a.g / divider, a.b / divider);
+	float multiplier = 1.0f / divider;
+	return Color(a.r * multiplier, a.g * multiplier, a.b * multiplier);
 }
