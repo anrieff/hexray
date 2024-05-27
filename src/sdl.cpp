@@ -30,6 +30,7 @@
 #include "util.h"
 #include <algorithm>
 #include <filesystem>
+#include <mutex>
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
@@ -74,7 +75,7 @@ void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 		for (int x = 0; x < screen->w; x++)
 			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
 	}
-	SDL_UpdateWindowSurface(window);
+	showUpdatedFullscreen();
 }
 
 static bool isExitEvent(SDL_Event& ev)
@@ -132,7 +133,7 @@ void waitForUserExit(void)
 	while (1) {
 		while (SDL_WaitEvent(&ev)) {
 			if (isExitEvent(ev)) return;
-			if (isWindowRedrawEvent(ev)) SDL_UpdateWindowSurface(window);
+			if (isWindowRedrawEvent(ev)) showUpdatedFullscreen();
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F12) {
 				takeScreenshotAuto(Bitmap::outputFormat_BMP);
 			}
@@ -150,7 +151,7 @@ bool checkForUserExit(void)
 		if (isExitEvent(ev)) return true;
 		if (isWindowRedrawEvent(ev)) windowDirty = true;
 	}
-	if (windowDirty) SDL_UpdateWindowSurface(window);
+	if (windowDirty) showUpdatedFullscreen();
 	return false;
 }
 
@@ -210,10 +211,21 @@ bool drawRect(Rect r, const Color& c)
 	return true;
 }
 
+std::mutex sdlLock;
+
+void showUpdatedFullscreen()
+{
+	sdlLock.lock();
+	SDL_UpdateWindowSurface(window);
+	sdlLock.unlock();
+}
+
 void showUpdated(Rect r)
 {
 	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
+	sdlLock.lock();
 	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+	sdlLock.unlock();
 }
 
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
@@ -262,8 +274,7 @@ bool markRegion(Rect r, const Color& bracketColor)
 		DRAW(i, 1, BRACKET_COLOR);
 	}
 
-	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
-	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+	showUpdated(r);
 
 	return true;
 }
@@ -277,7 +288,7 @@ void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE])
 		for (int x = 0; x < screen->w; x++)
 			if (needsAA[y][x]) row[x] = YELLOW;
 	}
-	SDL_UpdateWindowSurface(window);
+	showUpdatedFullscreen();
 }
 
 unsigned char SRGB_COMPRESS_CACHE[4097];
