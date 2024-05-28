@@ -259,8 +259,9 @@ struct GlobalSettings: public SceneElement {
 	bool gi = false;
 	int numPaths = 32;
 
-	// System:
+	// System/interactivity:
 	int numThreads = 0;                           //!< num rendering threads, or use 0 to auto-detect
+	bool interactive = false;					  //!< render in interactive mode (accepting user input)
 
 	void fillProperties(ParsedBlock& pb);
 	ElementType getElementType() const { return ELEM_SETTINGS; }

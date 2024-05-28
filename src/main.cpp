@@ -452,7 +452,9 @@ int main(int argc, char** argv)
 	buckets = getBucketsList();
 	// render:
 	Uint32 start = SDL_GetTicks();
-	if (renderAnimation()) {
+	if (scene.settings.interactive) {
+		renderAnimation();
+	} else if (renderStatic()) {
 		Uint32 end = SDL_GetTicks();
 		displayVFB(vfb);
 		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
