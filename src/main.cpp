@@ -262,15 +262,17 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 	threadPool->run([displayProgress, &cursor] (int threadIdx, int threadCount) {
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
-			for (int y = r.y0; y < r.y1; y++)
+			for (int y = r.y0; y < r.y1; y++) {
+				if (checkForUserExit()) return;
 				for (int x = r.x0; x < r.x1; x++)
 					vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
+			}
 			if (displayProgress) displayVFBRect(r, vfb);
-			if (checkForUserExit()) return;
 		}
 	});
 
 	// Do we need AA? if not, we're done
+	if (checkForUserExit()) return false;
 	if (!scene.settings.wantAA) return true;
 
 	// Pass 2: detect pixels, needing AA:
@@ -285,18 +287,19 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
 			if (displayProgress) markRegion(r);
-			for (int y = r.y0; y < r.y1; y++)
+			for (int y = r.y0; y < r.y1; y++) {
+				if (checkForUserExit()) return;
 				for (int x = r.x0; x < r.x1; x++) if (needsAA[y][x]) {
 					for (int i = 1; i < AA_KERNEL_SIZE; i++) // note that we skip index i=0, as we did it in pass 1.
 						vfb[y][x] += traceSingleRay(x + AA_KERNEL[i][0], y + AA_KERNEL[i][1]);
 					vfb[y][x] *= mul;
 				}
+			}
 			if (displayProgress) displayVFBRect(r, vfb);
-			if (checkForUserExit()) return;
 		}
 	});
 
-	return true;
+	return !checkForUserExit();
 }
 
 bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns true if the complete frame is rendered
@@ -321,7 +324,8 @@ bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns tru
 		float mul = 1.0f / raysPerPixel;
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
-			for (int y = r.y0; y < r.y1; y++)
+			for (int y = r.y0; y < r.y1; y++) {
+				if (checkForUserExit()) return;
 				for (int x = r.x0; x < r.x1; x++) {
 					Color sum(0, 0, 0);
 					for (int i = 0; i < raysPerPixel; i++) {
@@ -329,8 +333,8 @@ bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns tru
 					}
 					vfb[y][x] = sum * mul;
 				}
+			}
 			if (displayProgress) displayVFBRect(r, vfb);
-			if (checkForUserExit()) return;
 		}
 	});
 
@@ -394,12 +398,13 @@ static void ensureDataIsVisible()
 	}
 }
 
-bool renderAnimation()
+void renderAnimation()
 {
 	scene.beginRender();
 	Uint32 startTicks = SDL_GetTicks();
 	int numFrames = 0;
 	for (int angle = 0; angle < 360; angle += 5) {
+		if (checkForUserExit()) break;
 		scene.camera->yaw = angle;
 		scene.beginFrame();
 		render(false);
@@ -408,7 +413,6 @@ bool renderAnimation()
 	}
 	Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
 	printf("%d frames in %u ms: %.2f FPS\n", numFrames, elapsedTicks, numFrames / (elapsedTicks * 0.001));
-	return false;
 }
 
 bool renderStatic()

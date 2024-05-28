@@ -31,9 +31,13 @@
 #include <algorithm>
 #include <filesystem>
 #include <mutex>
+#include <thread>
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
+std::mutex sdlLock;
+std::thread sdlUIThread;
+volatile static bool exitRequested = false;
 
 /// try to create a frame window with the given dimensions
 bool initGraphics(int frameWidth, int frameHeight)
@@ -55,12 +59,15 @@ bool initGraphics(int frameWidth, int frameHeight)
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
 		return false;
 	}
+	void handleUIThread(void);
+	sdlUIThread = std::thread(handleUIThread);
 	return true;
 }
 
 /// closes SDL graphics
 void closeGraphics(void)
 {
+	if (sdlUIThread.joinable()) sdlUIThread.join();
 	SDL_Quit();
 }
 
@@ -76,20 +83,6 @@ void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
 	}
 	showUpdatedFullscreen();
-}
-
-static bool isExitEvent(SDL_Event& ev)
-{
-	return (ev.type == SDL_QUIT || (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE));
-}
-
-static bool isWindowRedrawEvent(SDL_Event& ev)
-{
-	const Uint32 WINDOW_DAMAGED_EVENTS[] = {
-		SDL_WINDOWEVENT_SHOWN, SDL_WINDOWEVENT_EXPOSED, SDL_WINDOWEVENT_MAXIMIZED, SDL_WINDOWEVENT_RESTORED
-	};
-	for (auto& id: WINDOW_DAMAGED_EVENTS) if (ev.window.event == id) return true;
-	return false;
 }
 
 // find an unused file name like 'hexray_0005.bmp'
@@ -125,14 +118,32 @@ bool takeScreenshotAuto(Bitmap::OutputFormat fmt)
 	return takeScreenshot(fn);
 }
 
-/// waits the user to indicate he/she wants to close the application (by either clicking on the "X" of the window,
-/// or by pressing ESC)
-void waitForUserExit(void)
+static bool isExitEvent(SDL_Event& ev)
+{
+	return (ev.type == SDL_QUIT || (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE));
+}
+
+static bool isWindowRedrawEvent(SDL_Event& ev)
+{
+	const Uint32 WINDOW_DAMAGED_EVENTS[] = {
+		SDL_WINDOWEVENT_SHOWN, SDL_WINDOWEVENT_EXPOSED, SDL_WINDOWEVENT_MAXIMIZED, SDL_WINDOWEVENT_RESTORED
+	};
+	if (ev.type != SDL_WINDOWEVENT) return false;
+	for (auto& id: WINDOW_DAMAGED_EVENTS) if (ev.window.event == id) return true;
+	return false;
+}
+
+// this thread is automatically run by initGraphics and supports early exit of the program
+// by pressing the ESC key or closing the window using the "X" button
+void handleUIThread()
 {
 	SDL_Event ev;
-	while (1) {
+	while (!exitRequested) {
 		while (SDL_WaitEvent(&ev)) {
-			if (isExitEvent(ev)) return;
+			if (isExitEvent(ev)) {
+				exitRequested = true;
+				return;
+			}
 			if (isWindowRedrawEvent(ev)) showUpdatedFullscreen();
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F12) {
 				takeScreenshotAuto(Bitmap::outputFormat_BMP);
@@ -141,20 +152,19 @@ void waitForUserExit(void)
 	}
 }
 
+/// waits the user to indicate he/she wants to close the application (by either clicking on the "X" of the window,
+/// or by pressing ESC). Since the actual event handling is done by the UI thread, we just wait for it to exit
+void waitForUserExit(void)
+{
+	sdlUIThread.join(); // wait for the message loop to close
+}
+
 /// checks if the user indicated he/she wants to close the application (by either clicking on the "X" of the window,
 /// or by pressing ESC)
 bool checkForUserExit(void)
 {
-	SDL_Event ev;
-	bool windowDirty = false;
-	while (SDL_PollEvent(&ev)) {
-		if (isExitEvent(ev)) return true;
-		if (isWindowRedrawEvent(ev)) windowDirty = true;
-	}
-	if (windowDirty) showUpdatedFullscreen();
-	return false;
+	return exitRequested;
 }
-
 
 /// returns the frame width
 int frameWidth(void)
@@ -210,8 +220,6 @@ bool drawRect(Rect r, const Color& c)
 	}
 	return true;
 }
-
-std::mutex sdlLock;
 
 void showUpdatedFullscreen()
 {
