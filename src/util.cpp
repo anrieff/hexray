@@ -78,7 +78,7 @@ vector<string> split(string s, char separator)
 	return result;
 }
 
-static std::mt19937 generator; // mersenne twister generator
+thread_local static std::mt19937 generator; // mersenne twister generator
 
 int randInt(int a, int b)
 {
