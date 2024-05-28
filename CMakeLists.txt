@@ -76,6 +76,8 @@ add_executable(hexray
 	src/vector.h
 )
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	message(STATUS "Setting aggressive optimization flags (per Lecture 13)")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -march=haswell -mtune=haswell")
 	target_compile_options(hexray PRIVATE -Wall)
 	target_link_libraries(hexray stdc++fs)
 else()
