@@ -75,7 +75,12 @@ void Mesh::beginRender()
 	}
 	// if the object is set to be smooth-shaded, but it lacks normals, we have to revert it to "faceted":
 	if (normals.size() <= 1) faceted = true;
+}
 
+Mesh::~Mesh()
+{
+	if (kdroot) delete kdroot;
+	kdroot = nullptr;
 }
 
 void Mesh::buildKD(KDTreeNode* node, BBox bbox, const std::vector<int>& t_list, int depth)

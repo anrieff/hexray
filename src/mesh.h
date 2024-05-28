@@ -91,6 +91,8 @@ public:
 	bool useKDTree = true;
 	bool autoSmooth = false;
 
+	~Mesh();
+
 	bool loadFromOBJ(const char* filename);
 
 	void baseProperties(ParsedBlock& pb)
