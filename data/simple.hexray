@@ -8,6 +8,7 @@ GlobalSettings {
 	maxTraceDepth		5
 	wantAA				on
 	prepassSamples      0
+	interactive         on
 }
 
 PointLight {
