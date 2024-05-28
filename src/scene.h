@@ -259,6 +259,9 @@ struct GlobalSettings: public SceneElement {
 	bool gi = false;
 	int numPaths = 32;
 
+	// System:
+	int numThreads = 0;                           //!< num rendering threads, or use 0 to auto-detect
+
 	void fillProperties(ParsedBlock& pb);
 	ElementType getElementType() const { return ELEM_SETTINGS; }
 };

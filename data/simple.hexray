@@ -7,6 +7,7 @@ GlobalSettings {
 	ambientLight        (0.28, 0.30, 0.35)
 	maxTraceDepth		5
 	wantAA				on
+	prepassSamples      0
 }
 
 PointLight {
@@ -141,8 +142,8 @@ Layered glass {
 
 Node wineglass {
 	geometry wineglass
-	//shader	white_flat
-	shader	 glass
+	shader	white_flat
+	//shader	 glass
 	translate (126, 0, 80)
 	scale (17, 17, 17)
 }

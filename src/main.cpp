@@ -31,6 +31,7 @@
 #include <optional>
 #include <atomic>
 #include <thread>
+#include <memory>
 #include "util.h"
 #include "sdl.h"
 #include "main.h"
@@ -44,6 +45,7 @@
 #include "mesh.h"
 #include "environment.h"
 #include "lights.h"
+#include "threading.h"
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];
@@ -242,6 +244,8 @@ Color traceSingleRay(double x, double y, bool fast = false)
 	}
 }
 
+std::unique_ptr<ThreadPool> threadPool;
+
 bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the complete frame is rendered
 {
 	static const float AA_KERNEL[5][2] {
@@ -255,8 +259,7 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 
 	// Pass 1: render without anti-aliasing
 	std::atomic<int> cursor(0);
-	int N = int(std::thread::hardware_concurrency());
-	auto workerPass1 = [N, displayProgress, &cursor] () {
+	threadPool->run([displayProgress, &cursor] (int threadIdx, int threadCount) {
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
 			for (int y = r.y0; y < r.y1; y++)
@@ -265,12 +268,7 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 			if (displayProgress) displayVFBRect(r, vfb);
 			if (checkForUserExit()) return;
 		}
-	};
-	std::vector<std::thread> threads(N);
-	for (int threadIdx = 1; threadIdx < N; threadIdx++)
-		threads[threadIdx] = std::thread(workerPass1);
-	workerPass1();
-	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
+	});
 
 	// Do we need AA? if not, we're done
 	if (!scene.settings.wantAA) return true;
@@ -282,7 +280,7 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 
 	// Pass 3: recompute those pixels with the AA kernel:
 	cursor = 0;
-	auto workerPass2 = [N, displayProgress, &cursor] () {
+	threadPool->run([displayProgress, &cursor] (int threadIdx, int threadCount) {
 		float mul = 1.0f / AA_KERNEL_SIZE;
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
@@ -296,18 +294,15 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 			if (displayProgress) displayVFBRect(r, vfb);
 			if (checkForUserExit()) return;
 		}
-	};
-	for (int threadIdx = 1; threadIdx < N; threadIdx++)
-		threads[threadIdx] = std::thread(workerPass2);
-	workerPass2();
-	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
+	});
 
 	return true;
 }
 
 bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns true if the complete frame is rendered
 {
-	if (scene.camera->autoFocus) {
+	// compute the auto-focus, if required:
+	if (scene.camera->dof && scene.camera->autoFocus) {
 		Ray midRay = scene.camera->getScreenRay(frameWidth() * 0.5, frameHeight() * 0.5);
 		double closestIntersectionDist = INF;
 		//
@@ -320,8 +315,9 @@ bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns tru
 		if (closestIntersectionDist < INF)
 			scene.camera->focalPlaneDist = closestIntersectionDist;
 	}
+	// render the image (only one pass with many rays per pixel)
 	std::atomic<int> cursor(0);
-	auto worker = [displayProgress, raysPerPixel, &cursor] () {
+	threadPool->run([displayProgress, raysPerPixel, &cursor] (int threadIdx, int threadCount) {
 		float mul = 1.0f / raysPerPixel;
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
@@ -336,13 +332,7 @@ bool renderWithMonteCarlo(bool displayProgress, int raysPerPixel) // returns tru
 			if (displayProgress) displayVFBRect(r, vfb);
 			if (checkForUserExit()) return;
 		}
-	};
-	int N = std::thread::hardware_concurrency();
-	std::vector<std::thread> threads(N);
-	for (int threadIdx = 1; threadIdx < N; threadIdx++)
-		threads[threadIdx] = std::thread(worker);
-	worker();
-	for (int threadIdx = 1; threadIdx < N; threadIdx++) threads[threadIdx].join();
+	});
 
 	return true;
 }
@@ -404,6 +394,23 @@ static void ensureDataIsVisible()
 	}
 }
 
+bool renderAnimation()
+{
+	scene.beginRender();
+	Uint32 startTicks = SDL_GetTicks();
+	int numFrames = 0;
+	for (int angle = 0; angle < 360; angle += 5) {
+		scene.camera->yaw = angle;
+		scene.beginFrame();
+		render(false);
+		displayVFB(vfb);
+		numFrames++;
+	}
+	Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
+	printf("%d frames in %u ms: %.2f FPS\n", numFrames, elapsedTicks, numFrames / (elapsedTicks * 0.001));
+	return false;
+}
+
 bool renderStatic()
 {
 	scene.beginRender();
@@ -411,18 +418,25 @@ bool renderStatic()
 	return render(true);
 }
 
-const char* DEFAULT_SCENE = "data/smallpt.hexray";
+const char* DEFAULT_SCENE = "data/simple.hexray";
 
 int main(int argc, char** argv)
 {
+	// setup:
 	Color::init_sRGB_cache();
 	ensureDataIsVisible();
+	// parse the scene:
 	const char* sceneFile = DEFAULT_SCENE;
 	if (argc > 1 && strlen(argv[1]) && argv[1][0] != '-') sceneFile = argv[1];
 	if (!scene.parseScene(sceneFile)) {
 		printf("Could not parse the scene file (%s)!\n", sceneFile);
 		return 1;
 	}
+	// configure the thread pool:
+	if (scene.settings.numThreads <= 0) scene.settings.numThreads = std::thread::hardware_concurrency();
+	printf("Rendering on %d threads\n", scene.settings.numThreads);
+	threadPool = std::make_unique<ThreadPool>(scene.settings.numThreads);
+	// configure the functions for ray generation and ray tracing:
 	traceFunction = raytrace;
 	if (scene.settings.gi) traceFunction = [] (Ray ray) { return pathtrace(ray); };
 	rayGenerator = scene.camera->dof ?
@@ -432,14 +446,19 @@ int main(int argc, char** argv)
 		[] (double x, double y, double u, double v, double stereoOffset) {
 			return scene.camera->getScreenRay(x, y, stereoOffset);
 		};
+	// open up the window
 	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
+	// split the screen into regions:
 	buckets = getBucketsList();
+	// render:
 	Uint32 start = SDL_GetTicks();
-	if (renderStatic()) {
+	if (renderAnimation()) {
 		Uint32 end = SDL_GetTicks();
+		displayVFB(vfb);
 		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
 		waitForUserExit();
 	}
+	// close the window
 	closeGraphics();
 	printf("Exited cleanly\n");
 	return 0;

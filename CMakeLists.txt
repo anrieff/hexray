@@ -69,6 +69,8 @@ add_executable(hexray
 	src/sdl.h
 	src/shading.cpp
 	src/shading.h
+	src/threading.cpp
+	src/threading.h
 	src/util.cpp
 	src/util.h
 	src/vector.h
