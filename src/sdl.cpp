@@ -61,8 +61,6 @@ bool initGraphics(int frameWidth, int frameHeight)
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
 		return false;
 	}
-	void handleUIThread(void);
-	sdlUIThread = std::thread(handleUIThread);
 	return true;
 }
 
@@ -192,11 +190,11 @@ void getSDLInputs(const Uint8*& keystate, int& mouseDeltaX, int& mouseDeltaY, st
 	eventLock.unlock();
 }
 
-// this thread is automatically run by initGraphics and supports early exit of the program
+// this is called by the main thread, processes window events and supports early exit of the program
 // by pressing the ESC key or closing the window using the "X" button. It also handles window
 // redraw events, the F12 key (for screenshots), and saves all other events ("non-system") to
 // a queue (savedEvents). The queue can be retrieved later (getSavedEvents)
-void handleUIThread()
+void uiMainLoop()
 {
 	SDL_Event ev;
 	while (!exitRequested && SDL_WaitEvent(&ev)) {
@@ -206,13 +204,6 @@ void handleUIThread()
 			eventLock.unlock();
 		}
 	}
-}
-
-/// waits the user to indicate he/she wants to close the application (by either clicking on the "X" of the window,
-/// or by pressing ESC). Since the actual event handling is done by the UI thread, we just wait for it to exit
-void waitForUserExit(void)
-{
-	sdlUIThread.join(); // wait for the message loop to close
 }
 
 /// checks if the user indicated he/she wants to close the application (by either clicking on the "X" of the window,
