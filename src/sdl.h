@@ -27,6 +27,7 @@
 #include "color.h"
 #include "constants.h"
 #include <vector>
+#include <SDL.h>
 
 struct Rect {
 	int x0, y0, x1, y1, w, h;
@@ -46,6 +47,16 @@ void closeGraphics(void);
 void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]); //!< displays the VFB (Virtual framebuffer) to the real one.
 void waitForUserExit(void); //!< Pause. Wait until the user closes the application
 bool checkForUserExit(void); //!< check if the user wants to close the application (returns true if so)
+/**
+ * Gets the keyboard, mouse and potentially other inputs from SDL:
+ * @param keystate - a byte-addressable array of key codes which are pressed at the time of calling getSDLInputs()
+ *                   e.g. keystate[SDL_F1] will be nonzero if the F1 is being held pressed right now
+ * @param mouseDeltaX - the relative mouse motion since the last call to getSDLInputs()
+ * @param mouseDeltaY - ditto
+ * @param events      - all non-system events queued for processing. The queue is cleared after this call and
+ *                      starts collecting new events
+ */
+void getSDLInputs(const Uint8*& keystate, int& mouseDeltaX, int& mouseDeltaY, std::vector<SDL_Event>& events);
 int frameWidth(void); //!< returns the frame width (pixels)
 int frameHeight(void); //!< returns the frame height (pixels)
 

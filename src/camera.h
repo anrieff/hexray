@@ -50,6 +50,8 @@ public:
 	Ray getDOFScreenRay(double x, double y, double u, double v, double stereoOffset = 0.0);
 	Vector getFrontDir() const { return m_frontDir; }
 	double getApertureSize() const { return m_apertureSize; }
+	void move(double sideways, double front_back);
+	void rotate(double yawDiff, double pitchDiff);
     //
 	virtual ElementType getElementType() const override { return ELEM_CAMERA; }
 	void fillProperties(ParsedBlock& pb)

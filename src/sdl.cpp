@@ -35,8 +35,9 @@
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
-std::mutex sdlLock;
+std::mutex sdlLock, eventLock;
 std::thread sdlUIThread;
+std::vector<SDL_Event> savedEvents;
 volatile static bool exitRequested = false;
 
 /// try to create a frame window with the given dimensions
@@ -118,36 +119,64 @@ bool takeScreenshotAuto(Bitmap::OutputFormat fmt)
 	return takeScreenshot(fn);
 }
 
-static bool isExitEvent(SDL_Event& ev)
-{
-	return (ev.type == SDL_QUIT || (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE));
-}
-
-static bool isWindowRedrawEvent(SDL_Event& ev)
+static bool isWindowRedrawEvent(const SDL_Event& ev)
 {
 	const Uint32 WINDOW_DAMAGED_EVENTS[] = {
 		SDL_WINDOWEVENT_SHOWN, SDL_WINDOWEVENT_EXPOSED, SDL_WINDOWEVENT_MAXIMIZED, SDL_WINDOWEVENT_RESTORED
 	};
-	if (ev.type != SDL_WINDOWEVENT) return false;
 	for (auto& id: WINDOW_DAMAGED_EVENTS) if (ev.window.event == id) return true;
 	return false;
 }
 
+static bool handleSystemEvent(const SDL_Event& ev)
+{
+	switch (ev.type) {
+		case SDL_QUIT:
+			exitRequested = true;
+			return true;
+		case SDL_WINDOWEVENT:
+		{
+			if (isWindowRedrawEvent(ev)) showUpdatedFullscreen();
+			return true;
+		}
+		case SDL_KEYDOWN:
+		{
+			switch (ev.key.keysym.sym) {
+				case SDLK_ESCAPE:
+					exitRequested = true;
+					return true;
+				case SDLK_F12:
+					takeScreenshotAuto(Bitmap::outputFormat_BMP);
+					return true;
+			}
+			break;
+		}
+	}
+	return false;
+}
+
+void getSDLInputs(const Uint8*& keystate, int& mouseDeltaX, int& mouseDeltaY, std::vector<SDL_Event>& events)
+{
+	events.clear();
+	eventLock.lock();
+	events.swap(savedEvents);
+	keystate = SDL_GetKeyboardState(nullptr);
+	SDL_GetRelativeMouseState(&mouseDeltaX, &mouseDeltaY);
+	eventLock.unlock();
+}
+
 // this thread is automatically run by initGraphics and supports early exit of the program
-// by pressing the ESC key or closing the window using the "X" button
+// by pressing the ESC key or closing the window using the "X" button. It also handles window
+// redraw events, the F12 key (for screenshots), and saves all other events ("non-system") to
+// a queue (savedEvents). The queue can be retrieved later (getSavedEvents)
 void handleUIThread()
 {
 	SDL_Event ev;
-	while (!exitRequested) {
-		while (SDL_WaitEvent(&ev)) {
-			if (isExitEvent(ev)) {
-				exitRequested = true;
-				return;
-			}
-			if (isWindowRedrawEvent(ev)) showUpdatedFullscreen();
-			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F12) {
-				takeScreenshotAuto(Bitmap::outputFormat_BMP);
-			}
+	while (!exitRequested && SDL_WaitEvent(&ev)) {
+		if (!handleSystemEvent(ev)) {
+			eventLock.lock();
+			savedEvents.push_back(ev);
+			eventLock.unlock();
 		}
 	}
 }

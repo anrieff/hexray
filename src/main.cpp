@@ -398,18 +398,44 @@ static void ensureDataIsVisible()
 	}
 }
 
-void renderAnimation()
+void gameloop()
 {
 	scene.beginRender();
+	Camera& cam = *scene.camera;
+	const double MOVEMENT_PER_SEC = 20;
+	const double ROTATION_PER_SEC = 50;
+	const double SENSITIVITY = 0.1;
 	Uint32 startTicks = SDL_GetTicks();
 	int numFrames = 0;
-	for (int angle = 0; angle < 360; angle += 5) {
-		if (checkForUserExit()) break;
-		scene.camera->yaw = angle;
+	while (!checkForUserExit()) {
 		scene.beginFrame();
+		Uint32 frameStart = SDL_GetTicks();
 		render(false);
 		displayVFB(vfb);
+		double timeDelta = (SDL_GetTicks() - frameStart) / 1000.0;
 		numFrames++;
+		//
+		const Uint8* keystate;
+		int deltax, deltay;
+		std::vector<SDL_Event> events;
+		getSDLInputs(keystate, deltax, deltay, events);
+		//
+		double movement = MOVEMENT_PER_SEC * timeDelta;
+		double rotation = ROTATION_PER_SEC * timeDelta;
+		// arrow keys movement:
+		if (keystate[SDL_SCANCODE_UP]) cam.move(0, +movement);
+		if (keystate[SDL_SCANCODE_DOWN]) cam.move(0, -movement);
+		if (keystate[SDL_SCANCODE_LEFT]) cam.move(-movement, 0);
+		if (keystate[SDL_SCANCODE_RIGHT]) cam.move(+movement, 0);
+
+		// keypad arrow keys look around:
+		if (keystate[SDL_SCANCODE_KP_8]) cam.rotate(0, +rotation);
+		if (keystate[SDL_SCANCODE_KP_2]) cam.rotate(0, -rotation);
+		if (keystate[SDL_SCANCODE_KP_4]) cam.rotate(+rotation, 0);
+		if (keystate[SDL_SCANCODE_KP_6]) cam.rotate(-rotation, 0);
+
+		// mouse look around
+		cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY*deltay);
 	}
 	Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
 	printf("%d frames in %u ms: %.2f FPS\n", numFrames, elapsedTicks, numFrames / (elapsedTicks * 0.001));
@@ -457,7 +483,7 @@ int main(int argc, char** argv)
 	// render:
 	Uint32 start = SDL_GetTicks();
 	if (scene.settings.interactive) {
-		renderAnimation();
+		gameloop();
 	} else if (renderStatic()) {
 		Uint32 end = SDL_GetTicks();
 		displayVFB(vfb);

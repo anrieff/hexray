@@ -84,3 +84,16 @@ Ray Camera::getDOFScreenRay(double x, double y, double u, double v, double stere
 	ray.dir = normalize(T - ray.start);
 	return ray;
 }
+
+void Camera::move(double sideways, double front_back)
+{
+	pos += m_rightDir * sideways + m_frontDir * front_back;
+}
+
+void Camera::rotate(double yawDiff, double pitchDiff)
+{
+	yaw += yawDiff;
+	pitch += pitchDiff;
+	pitch = std::min(90.0, pitch);
+	pitch = std::max(-90.0, pitch);
+}
