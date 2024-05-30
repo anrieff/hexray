@@ -41,6 +41,7 @@ struct Rect {
 	void clip(int maxX, int maxY); // clips the rectangle against image size
 };
 
+extern bool isInteractive;
 
 bool initGraphics(int frameWidth, int frameHeight);
 void closeGraphics(void);

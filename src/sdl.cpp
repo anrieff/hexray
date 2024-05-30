@@ -38,6 +38,7 @@ SDL_Surface* screen = nullptr;
 std::mutex sdlLock, eventLock;
 std::thread sdlUIThread;
 std::vector<SDL_Event> savedEvents;
+bool isInteractive, mouseGrabbed;
 volatile static bool exitRequested = false;
 
 /// try to create a frame window with the given dimensions
@@ -128,6 +129,20 @@ static bool isWindowRedrawEvent(const SDL_Event& ev)
 	return false;
 }
 
+static void toggleMouseGrab()
+{
+	mouseGrabbed = !mouseGrabbed;
+	if (mouseGrabbed) {
+		SDL_ShowCursor(SDL_DISABLE);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+		SDL_SetWindowGrab(window, SDL_TRUE);
+	} else {
+		SDL_ShowCursor(SDL_ENABLE);
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+		SDL_SetWindowGrab(window, SDL_FALSE);
+	}
+}
+
 static bool handleSystemEvent(const SDL_Event& ev)
 {
 	switch (ev.type) {
@@ -143,13 +158,25 @@ static bool handleSystemEvent(const SDL_Event& ev)
 		{
 			switch (ev.key.keysym.sym) {
 				case SDLK_ESCAPE:
-					exitRequested = true;
+				{
+					if (isInteractive && mouseGrabbed)
+						toggleMouseGrab();
+					else
+						exitRequested = true;
 					return true;
+				}
 				case SDLK_F12:
 					takeScreenshotAuto(Bitmap::outputFormat_BMP);
 					return true;
 			}
 			break;
+		}
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			if (isInteractive && ev.button.button == 1) {
+				toggleMouseGrab();
+				return true;
+			}
 		}
 	}
 	return false;

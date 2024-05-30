@@ -407,6 +407,7 @@ void gameloop()
 	const double SENSITIVITY = 0.1;
 	Uint32 startTicks = SDL_GetTicks();
 	int numFrames = 0;
+	bool mouseGrabbed = false;
 	while (!checkForUserExit()) {
 		scene.beginFrame();
 		Uint32 frameStart = SDL_GetTicks();
@@ -483,6 +484,7 @@ int main(int argc, char** argv)
 	// render:
 	Uint32 start = SDL_GetTicks();
 	if (scene.settings.interactive) {
+		isInteractive = true;
 		gameloop();
 	} else if (renderStatic()) {
 		Uint32 end = SDL_GetTicks();
