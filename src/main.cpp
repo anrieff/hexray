@@ -449,6 +449,21 @@ bool renderStatic()
 	return render(true);
 }
 
+void renderThreadEntry() {
+	// split the screen into regions:
+	buckets = getBucketsList();
+	// render:
+	Uint32 start = SDL_GetTicks();
+	if (scene.settings.interactive) {
+		isInteractive = true;
+		gameloop();
+	} else if (renderStatic()) {
+		Uint32 end = SDL_GetTicks();
+		displayVFB(vfb);
+		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
+	}
+}
+
 const char* DEFAULT_SCENE = "data/simple.hexray";
 
 int main(int argc, char** argv)
@@ -479,19 +494,12 @@ int main(int argc, char** argv)
 		};
 	// open up the window
 	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
-	// split the screen into regions:
-	buckets = getBucketsList();
-	// render:
-	Uint32 start = SDL_GetTicks();
-	if (scene.settings.interactive) {
-		isInteractive = true;
-		gameloop();
-	} else if (renderStatic()) {
-		Uint32 end = SDL_GetTicks();
-		displayVFB(vfb);
-		printf("Elapsed time: %.2f seconds.\n", (end - start) / 1000.0);
-		waitForUserExit();
-	}
+	void uiMainLoop(void);
+	std::thread renderThread(renderThreadEntry);
+	uiMainLoop();
+	// in case of early exit the render thread has to be waited before closing the
+	// graphics, because it may still try to show the VFB
+	renderThread.join();
 	// close the window
 	closeGraphics();
 	printf("Exited cleanly\n");

@@ -46,7 +46,6 @@ extern bool isInteractive;
 bool initGraphics(int frameWidth, int frameHeight);
 void closeGraphics(void);
 void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]); //!< displays the VFB (Virtual framebuffer) to the real one.
-void waitForUserExit(void); //!< Pause. Wait until the user closes the application
 bool checkForUserExit(void); //!< check if the user wants to close the application (returns true if so)
 /**
  * Gets the keyboard, mouse and potentially other inputs from SDL:
