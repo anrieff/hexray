@@ -407,7 +407,7 @@ void gameloop()
 	const double SENSITIVITY = 0.1;
 	Uint32 startTicks = SDL_GetTicks();
 	int numFrames = 0;
-	bool mouseGrabbed = false;
+	bool runMode = false;
 	while (!checkForUserExit()) {
 		scene.beginFrame();
 		Uint32 frameStart = SDL_GetTicks();
@@ -422,6 +422,7 @@ void gameloop()
 		getSDLInputs(keystate, deltax, deltay, events);
 		//
 		double movement = MOVEMENT_PER_SEC * timeDelta;
+		if (runMode) movement *= 3;
 		double rotation = ROTATION_PER_SEC * timeDelta;
 		// arrow keys movement:
 		if (keystate[SDL_SCANCODE_UP]) cam.move(0, +movement);
@@ -437,6 +438,18 @@ void gameloop()
 
 		// mouse look around
 		cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY*deltay);
+
+		// handle keyboard button presses (non-movement, non-hold events)
+		for (auto& ev: events) if (ev.type == SDL_KEYDOWN) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_r:
+					runMode = !runMode;
+					break;
+				case SDLK_F5:
+					printf("Last frame took %.3fs\n", timeDelta);
+					break;
+			}
+		}
 	}
 	Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
 	printf("%d frames in %u ms: %.2f FPS\n", numFrames, elapsedTicks, numFrames / (elapsedTicks * 0.001));

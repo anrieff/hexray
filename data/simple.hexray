@@ -6,7 +6,7 @@ GlobalSettings {
 	frameHeight         540
 	ambientLight        (0.28, 0.30, 0.35)
 	maxTraceDepth		5
-	wantAA				on
+	wantAA				off
 	prepassSamples      0
 	interactive         on
 }
