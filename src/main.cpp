@@ -51,6 +51,7 @@ Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];
 std::vector<Rect> buckets;
 const float AA_THRESH = 0.075f;
+int vipX = -100, vipY = -100;
 
 struct TraceContext {
 	IntersectionInfo closestIntersection;
@@ -223,6 +224,7 @@ std::function<Ray(double, double, double, double, double)> rayGenerator;
 
 Color traceSingleRay(double x, double y, bool fast = false)
 {
+	//if (sqr(x - vipX) + sqr(y - vipY) < 100) return Color(1, 1, 0);
 	double u, v;
 	if (scene.camera->dof) unitDiskSample(u, v);
 	//sum += raytrace(scene.camera->getDOFScreenRay(x + randDouble(), y + randDouble(), u, v));
@@ -255,17 +257,55 @@ bool renderWithoutMonteCarlo(bool displayProgress) // returns true if the comple
 		{ 0.0f, 0.6f },
 		{ 0.6f, 0.6f },
 	};
+	static const int COARSE_KERNEL[5][2] {
+		{ 2, 2 },
+		{ 2, 6 },
+		{ 4, 4 },
+		{ 6, 2 },
+		{ 6, 6 },
+	};
 	static const int AA_KERNEL_SIZE = int(COUNT_OF(AA_KERNEL));
+	int foveated_thresh = sqr(scene.settings.foveatedRadius);
 
 	// Pass 1: render without anti-aliasing
 	std::atomic<int> cursor(0);
-	threadPool->run([displayProgress, &cursor] (int threadIdx, int threadCount) {
+	threadPool->run([displayProgress, &cursor, foveated_thresh] (int threadIdx, int threadCount) {
 		for (int i = cursor++; i < int(buckets.size()); i = cursor++) {
 			auto& r = buckets[i];
-			for (int y = r.y0; y < r.y1; y++) {
-				if (checkForUserExit()) return;
-				for (int x = r.x0; x < r.x1; x++)
-					vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
+			if (scene.settings.foveatedRadius <= 0) {
+				// plain old rendering. Raytrace through every single pixel; shoot one ray only
+				for (int y = r.y0; y < r.y1; y++) {
+					if (checkForUserExit()) return;
+					for (int x = r.x0; x < r.x1; x++)
+						vfb[y][x] = traceSingleRay(x, y); // should be "x + AA_KERNEL[0][0]", etc.
+				}
+			} else {
+				// foveated rendering. Split the frame into 8x8 blocks, determine which blocks are close to
+				// (vipX, vipY), and only render those in full resolution. The others are approximated via
+				// 5 raytrace()s only
+				for (int blkY = r.y0; blkY < r.y1; blkY += 8) {
+					if (checkForUserExit()) return;
+					int blkYend = std::min(r.y1, blkY + 8);
+					for (int blkX = r.x0; blkX < r.x1; blkX += 8) {
+						int blkXend = std::min(r.x1, blkX + 8);
+						int cx = blkX + 4, cy = blkY + 4;
+						if (sqr(cx - vipX) + sqr(cy - vipY) > foveated_thresh) {
+							// coarse quality:
+							Color sum(0, 0, 0);
+							for (int j = 0; j < 5; j++)
+								sum += traceSingleRay(blkX + COARSE_KERNEL[j][1], blkY + COARSE_KERNEL[j][0]);
+							sum *= 0.2f;
+							for (int y = blkY; y < blkYend; y++)
+								for (int x = blkX; x < blkXend; x++)
+									vfb[y][x] = sum;
+						} else {
+							// inside the fovea; full quality
+							for (int y = blkY; y < blkYend; y++)
+								for (int x = blkX; x < blkXend; x++)
+									vfb[y][x] = traceSingleRay(x, y);
+						}
+					}
+				}
 			}
 			if (displayProgress) displayVFBRect(r, vfb);
 		}
@@ -437,17 +477,23 @@ void gameloop()
 		if (keystate[SDL_SCANCODE_KP_6]) cam.rotate(-rotation, 0);
 
 		// mouse look around
-		cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY*deltay);
+		if (scene.settings.foveatedRadius <= 0)
+			cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY * deltay);
 
 		// handle keyboard button presses (non-movement, non-hold events)
-		for (auto& ev: events) if (ev.type == SDL_KEYDOWN) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_r:
-					runMode = !runMode;
-					break;
-				case SDLK_F5:
-					printf("Last frame took %.3fs\n", timeDelta);
-					break;
+		for (auto& ev: events) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_r:
+						runMode = !runMode;
+						break;
+					case SDLK_F5:
+						printf("Last frame took %.3fs\n", timeDelta);
+						break;
+				}
+			} else if (ev.type == SDL_MOUSEMOTION) {
+				vipX = ev.motion.x;
+				vipY = ev.motion.y;
 			}
 		}
 	}
@@ -464,7 +510,7 @@ bool renderStatic()
 
 void renderThreadEntry() {
 	// split the screen into regions:
-	buckets = getBucketsList();
+	buckets = getBucketsList(scene.settings.interactive ? 16 : 64);
 	// render:
 	Uint32 start = SDL_GetTicks();
 	if (scene.settings.interactive) {

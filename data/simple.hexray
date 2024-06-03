@@ -9,6 +9,7 @@ GlobalSettings {
 	wantAA				off
 	prepassSamples      0
 	interactive         on
+	//foveatedRadius      75
 }
 
 PointLight {

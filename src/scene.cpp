@@ -774,6 +774,7 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getIntProp("numPaths", &numPaths, 1);
 	pb.getIntProp("numThreads", &numThreads, 0, 1024);
 	pb.getBoolProp("interactive", &interactive);
+	pb.getIntProp("foveatedRadius", &foveatedRadius, 0, 1000);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)
