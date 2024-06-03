@@ -197,10 +197,12 @@ static void detectAApixels()
 		{ -1,  1 }, { 0,  1 }, { 1,  1 }
 	};
 	int W = frameWidth(), H = frameHeight();
+	int foveated_thresh = (scene.settings.foveatedRadius > 0) ? sqr(scene.settings.foveatedRadius) : 999666111;
 	for (auto& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {
 				needsAA[y][x] = false;
+				if (sqr(x - vipX) + sqr(y - vipY) > foveated_thresh) continue;
 				const Color& me = vfb[y][x];
 				for (int ni = 0; ni < COUNT_OF(neighbours); ni++) {
 					int neighX = x + neighbours[ni][0];
