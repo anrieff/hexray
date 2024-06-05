@@ -48,6 +48,15 @@ void KDTreeStats::printStats()
 
 void Mesh::beginRender()
 {
+	if (recenter) {
+		Vector center(0, 0, 0);
+		for (int i = 1; i < (int) vertices.size(); i++)
+			center += vertices[i];
+		center /= (vertices.size() - 1);
+		for (int i = 1; i < (int) vertices.size(); i++)
+			vertices[i] += -center;
+	}
+
 	computeBoundingGeometry();
 	if (useKDTree) {
 		memset(&kdstats, 0, sizeof(kdstats));

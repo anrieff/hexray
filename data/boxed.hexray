@@ -1,11 +1,11 @@
 GlobalSettings {
-	frameWidth          1024
-	frameHeight         768
-	ambientLight        (0.075, 0.075, 0.075)
+	frameWidth          640
+	frameHeight         480
+	ambientLight        (0.15, 0.15, 0.15)
 	maxTraceDepth 8
 	wantAA true
-	prepassSamples 100
-	gi            on
+	//prepassSamples 100
+	//gi            on
 	numPaths      32
 }
 
@@ -29,7 +29,7 @@ Camera camera_l_small {
 */
 //////////////////////// LIGHTS ////////////////////////////////////////////
 
-
+/*
 RectLight l2 {
 	xSubd 4
 	ySubd 4
@@ -39,15 +39,22 @@ RectLight l2 {
 	power   4000
 	rotate  (0, 45, 0)
 }
+*/
+
+PointLight l2 {
+	pos (50, 50, -20)
+	color (1, 1, 1)
+	power 1500
+}
 
 RectLight l_small {
-	translate  (0, 28, 63)
+	translate  (0, 28, 60)
 	rotate     (0, -88, 0)
 	scale      (10, 10, 10)
 	color	   (1, 1, 1)
-	power      4000
-	xSubd  4
-	ySubd  4
+	power      9000
+	xSubd  8
+	ySubd  8
 }
 
 
@@ -55,7 +62,7 @@ RectLight l_small {
 
 Plane wall {
 	y      0
-	limit   128
+	limit   64
 }
 
 Mesh teapot {
@@ -80,8 +87,8 @@ BumpTexture diceBump {
 //////////////////////// TEXTURES & SHADERS  ///////////////////////////////
 
 CheckerTexture checker {
-	color1   (0.55, 0.55, 0.12)
-	color2   (0.12, 0.12, 0.12)
+	color1   (0.5, 0.5, 0.25)
+	color2   (0.25, 0.25, 0.25)
 	scaling  8
 }
 

@@ -2,8 +2,8 @@
 
 // 1. First, some global settings
 GlobalSettings {
-	frameWidth          800
-	frameHeight         600
+	frameWidth          640
+	frameHeight         480
 	ambientLight        (0.28, 0.30, 0.35)
 	maxTraceDepth		7
 }
@@ -18,24 +18,24 @@ PointLight {
 // (to enable the spherical lens camera (which introduces heavy spherical abberation)), replace "Camera" with "SphericalLensCamera"
 
 Camera camera {
-	pos          (120, 22, 60)
+	pos          (115, 33, 40)
 	yaw           11.46
-	pitch        -15
+	pitch        -5.73
 	roll          0.0
 	fov           90
 	aspectRatio   1.333
-	focalPlaneDist 21.5
+	focalPlaneDist 21.48
 	//focalPlaneDist 18000
 	dof           off
-	fNumber       11.0
+	fNumber       5.6
 	numSamples    20 // change to 50 for visually pleasing results
-	stereoSeparation 0.35
+	//stereoSeparation 0.35
 }
 
 /*
 // top view
 Camera camera {
-	pos          (130, 85, 75)
+	pos          (115, 33, 40)
 	yaw           11.46
 	pitch        -90
 	roll          0.0
@@ -46,13 +46,13 @@ Camera camera {
 
 Plane floor {
 	y      0
-	limit   128
+	limit   64
 }
 
 CheckerTexture checker {
 	color1    (0.5, 0.5, 0.25)
 	color2    (0.25, 0.25, 0.25)
-	scaling 8
+	scaling   8
 }
 
 Lambert floorShader {
@@ -78,19 +78,28 @@ BumpTexture diceBump {
 	strength 5
 }
 
-Mesh teapot {
-	file "geom/teapot_hires.obj"
+Mesh heart {
+	autoSmooth true
+	useKDTree true
+	file "geom/heart.obj"
 }
 
+Mesh teapot {
+	file "geom/teapot_hires.obj"
+	recenter true
+}
+
+/*
 Mesh wineglass {
 	file "geom/newwine.obj"
 	backfaceCulling false
 }
+*/
 
 CheckerTexture teapot_checker {
 	color1 (0.9, 0.1, 0.1)
 	color2 (0.05, 0.05, 0.07)
-	scaling 0.1
+	scaling 50
 }
 
 Lambert teapot_lambert {
@@ -137,6 +146,17 @@ Layered glass {
 	layer reflection (1, 1, 1) fresnel
 }
 
+Phong red {
+	color (0.9, 0.2, 0.2)
+	exponent 133
+}
+
+Layered heartMaterial {
+	layer red (1, 1, 1)
+	layer reflection (0.2, 0.2, 0.3)
+}
+
+/*
 Sphere ball {
 	R 0.5
 }
@@ -172,27 +192,34 @@ Node wineglass {
 	translate (126, 0, 80)
 	scale (17, 17, 17)
 }
+*/
 
 Node dice {
 	geometry   dice
 	shader     flat
-	translate  (100, 10.1, 96)
-	rotate     (63, 0, 0)
+	translate  (115, 10.1, 96)
+	rotate     (63.02, 0, 0)
 	scale      (2.5, 2.5, 2.5)
 	bump       diceBump
 }
 
 Node teapotNode {
 	geometry   teapot
-	shader     teapot_layered
-	translate  (110, 19, 90)
-	rotate     (-18, 14, 30)
-	scale      (7.5, 7.5, 7.5)
+	shader     white_flat
+	translate  (104, 28.75, 93)
+	rotate     (189.08, 0, 17.19)
+	scale      (10, 10, 10)
 }
 
-
+Node heartNode {
+	geometry    heart
+	shader      heartMaterial
+	translate   (90, 12.1, 80)
+	rotate      (120.32, 0, 0)
+	scale       (3, 3, 3)
+}
 
 // 5. The cubemap environment:
 CubemapEnvironment environment {
-	folder "env/forest"
+	folder "env/mountain"
 }
