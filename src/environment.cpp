@@ -29,7 +29,7 @@
 #include "bitmap.h"
 #include "util.h"
 
-bool CubemapEnvironment::loadMaps(const char* folder)
+bool CubemapEnvironment::loadMaps(const char* folder, float gamma)
 {
 	// the maps are stored in order - negx, negy, negz, posx, posy, posz
 	const char* prefixes[2] = {"neg", "pos"};
@@ -43,7 +43,9 @@ bool CubemapEnvironment::loadMaps(const char* folder)
 				sprintf(fn, "%s/%s%s%s", folder, prefixes[pi], axes[axis], suffixes[si]);
 				if (std::filesystem::exists(fn) && m_sides[n].loadImage(fn)) break;
 			}
-			if (!m_sides[n++].isOK()) return false;
+			if (!m_sides[n].isOK()) return false;
+			if (gamma != 1.0f) m_sides[n].decompressGamma(gamma);
+			n++;
 		}
 	loaded = true;
 	return true;

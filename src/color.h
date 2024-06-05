@@ -46,6 +46,16 @@ inline unsigned convertTo8bit_sRGB(float x)
 	return nearestInt(x * 255.0f);
 }
 
+inline float decompress_sRGB(float x)
+{
+	if (x <= 0) return x;
+	if (x >= 1) return x;
+	if (x <= 0.04045f)
+		return x / 12.92f;
+	else
+		return powf((x + 0.055f) / 1.055f, 2.4f);
+}
+
 unsigned convertTo8bit_sRGB_cached(float x);
 
 /// Represents a color, using floatingpoint components in [0..1]

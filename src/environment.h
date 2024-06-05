@@ -58,14 +58,16 @@ public:
  	/// (or they may be .exr images, not .bmp).
  	/// The folder specification shouldn't include a trailing slash;
  	/// e.g. "/images/cubemaps/cathedral" is OK.
-	bool loadMaps(const char* folder);
+	bool loadMaps(const char* folder, float gamma);
 
 	void fillProperties(ParsedBlock& pb)
 	{
 		Environment::fillProperties(pb);
 		char folder[256];
+		float gamma = 1.0f;
+		pb.getFloatProp("assumedGamma", &gamma, 0.1f, 10.0f);
 		if (!pb.getFilenameProp("folder", folder)) pb.requiredProp("folder");
-		if (!loadMaps(folder)) {
+		if (!loadMaps(folder, gamma)) {
 			fprintf(stderr, "CubemapEnvironment: Could not load maps from `%s'\n", folder);
 		}
 	}

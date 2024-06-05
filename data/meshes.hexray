@@ -4,14 +4,14 @@
 GlobalSettings {
 	frameWidth          640
 	frameHeight         480
-	ambientLight        (0.28, 0.30, 0.35)
+	ambientLight        (0.14, 0.15, 0.17)
 	maxTraceDepth		7
 }
 
 PointLight {
 	pos            (160, 80, 40)
 	color          (1, 1, 1)
-	power           10000
+	power           5000
 }
 
 // 2. A camera
@@ -221,5 +221,6 @@ Node heartNode {
 
 // 5. The cubemap environment:
 CubemapEnvironment environment {
+	assumedGamma 2.2
 	folder "env/mountain"
 }

@@ -320,9 +320,19 @@ void Bitmap::differentiate()
 
 void Bitmap::decompressGamma(float gamma)
 {
-	for (auto& pixel: m_data) {
-		if (pixel.r > 0) pixel.r = pow(pixel.r, gamma);
-		if (pixel.g > 0) pixel.g = pow(pixel.g, gamma);
-		if (pixel.b > 0) pixel.b = pow(pixel.b, gamma);
+	if (fabs(gamma - 2.2f) < 1e-6f) {
+		// assume sRGB decompression:
+		for (auto& pixel: m_data) {
+			if (pixel.r > 0) pixel.r = decompress_sRGB(pixel.r);
+			if (pixel.g > 0) pixel.g = decompress_sRGB(pixel.g);
+			if (pixel.b > 0) pixel.b = decompress_sRGB(pixel.b);
+		}
+	} else {
+		// arbitrary gamma decompression
+		for (auto& pixel: m_data) {
+			if (pixel.r > 0) pixel.r = pow(pixel.r, gamma);
+			if (pixel.g > 0) pixel.g = pow(pixel.g, gamma);
+			if (pixel.b > 0) pixel.b = pow(pixel.b, gamma);
+		}
 	}
 }
