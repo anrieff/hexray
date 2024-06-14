@@ -35,9 +35,10 @@
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
-std::mutex sdlLock, eventLock;
+std::mutex eventLock, rectsLock;
 std::thread sdlUIThread;
 std::vector<SDL_Event> savedEvents;
+std::vector<Rect> updatedRects;
 bool isInteractive, mouseGrabbed;
 volatile static bool exitRequested = false;
 
@@ -197,11 +198,39 @@ void getSDLInputs(const Uint8*& keystate, int& mouseDeltaX, int& mouseDeltaY, st
 void uiMainLoop()
 {
 	SDL_Event ev;
-	while (!exitRequested && SDL_WaitEvent(&ev)) {
-		if (!handleSystemEvent(ev)) {
+
+	while (!exitRequested) {
+		if (SDL_WaitEventTimeout(&ev, 100) && !handleSystemEvent(ev)) {
 			eventLock.lock();
 			savedEvents.push_back(ev);
 			eventLock.unlock();
+		}
+		rectsLock.lock();
+		if (!updatedRects.empty()) {
+			std::vector<Rect> toUpdate;
+			toUpdate.swap(updatedRects);
+			rectsLock.unlock();
+			bool updateAll = false;
+			for (auto& r: toUpdate) {
+				if (r.x0 == -1 && r.y0 == -1) {
+					updateAll = true;
+					break;
+				}
+			}
+			if (updateAll) {
+				SDL_UpdateWindowSurface(window);
+			} else {
+				std::vector<SDL_Rect> toUpdateSDL(toUpdate.size());
+				for (int i = 0; i < int(toUpdate.size()); i++) {
+					toUpdateSDL[i].x = toUpdate[i].x0;
+					toUpdateSDL[i].y = toUpdate[i].y0;
+					toUpdateSDL[i].w = toUpdate[i].w;
+					toUpdateSDL[i].h = toUpdate[i].h;
+				}
+				SDL_UpdateWindowSurfaceRects(window, toUpdateSDL.data(), int(toUpdate.size()));
+			}
+		} else {
+			rectsLock.unlock();
 		}
 	}
 }
@@ -270,17 +299,16 @@ bool drawRect(Rect r, const Color& c)
 
 void showUpdatedFullscreen()
 {
-	sdlLock.lock();
-	SDL_UpdateWindowSurface(window);
-	sdlLock.unlock();
+	rectsLock.lock();
+	updatedRects.push_back(Rect(-1, -1, -1, -1));
+	rectsLock.unlock();
 }
 
 void showUpdated(Rect r)
 {
-	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
-	sdlLock.lock();
-	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
-	sdlLock.unlock();
+	rectsLock.lock();
+	updatedRects.push_back(r);
+	rectsLock.unlock();
 }
 
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
