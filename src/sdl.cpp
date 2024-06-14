@@ -24,6 +24,7 @@
  */
 #include <SDL.h>
 #include <SDL_video.h>
+#include <SDL_thread.h>
 #include <stdio.h>
 #include "sdl.h"
 #include "bitmap.h"
@@ -35,11 +36,13 @@
 
 SDL_Window* window = nullptr;
 SDL_Surface* screen = nullptr;
+SDL_threadID mainThreadID = SDL_threadID{};
 std::mutex sdlLock, eventLock;
 std::thread sdlUIThread;
 std::vector<SDL_Event> savedEvents;
 bool isInteractive, mouseGrabbed;
 volatile static bool exitRequested = false;
+Uint32 redrawEventID = 0U;
 
 /// try to create a frame window with the given dimensions
 bool initGraphics(int frameWidth, int frameHeight)
@@ -61,6 +64,8 @@ bool initGraphics(int frameWidth, int frameHeight)
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
 		return false;
 	}
+	mainThreadID = SDL_GetThreadID(nullptr);
+	redrawEventID = SDL_RegisterEvents(1);
 	return true;
 }
 
@@ -77,11 +82,13 @@ void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 	int rs = screen->format->Rshift;
 	int gs = screen->format->Gshift;
 	int bs = screen->format->Bshift;
+	sdlLock.lock();
 	for (int y = 0; y < screen->h; y++) {
 		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
 		for (int x = 0; x < screen->w; x++)
 			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
 	}
+	sdlLock.unlock();
 	showUpdatedFullscreen();
 }
 
@@ -175,7 +182,25 @@ static bool handleSystemEvent(const SDL_Event& ev)
 				toggleMouseGrab();
 				return true;
 			}
+			break;
 		}
+		default:
+			if (ev.type == redrawEventID) {
+				if (SDL_GetThreadID(nullptr)!=mainThreadID) {
+					printf("UserEvents should be handled in the main thread!!!\n");
+					if (ev.user.data1) {
+						delete static_cast<Rect*>(ev.user.data1);
+					}
+					return false;
+				}
+				if (ev.user.data1) {
+					showUpdated(*static_cast<Rect*>(ev.user.data1));
+					delete static_cast<Rect*>(ev.user.data1);
+				} else {
+					showUpdatedFullscreen();
+				}
+				return true;
+			}
 	}
 	return false;
 }
@@ -260,27 +285,48 @@ bool drawRect(Rect r, const Color& c)
 	int bs = screen->format->Bshift;
 
 	Uint32 clr = c.toRGB32(rs, gs, bs);
+	sdlLock.lock();
 	for (int y = r.y0; y < r.y1; y++) {
 		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
 		for (int x = r.x0; x < r.x1; x++)
 			row[x] = clr;
 	}
+	sdlLock.unlock();
 	return true;
 }
 
 void showUpdatedFullscreen()
 {
-	sdlLock.lock();
-	SDL_UpdateWindowSurface(window);
-	sdlLock.unlock();
+	const SDL_threadID currentThread=SDL_GetThreadID(nullptr);
+	if (currentThread==mainThreadID) {
+		sdlLock.lock();
+		SDL_UpdateWindowSurface(window);
+		sdlLock.unlock();
+	} else {
+		SDL_Event redrawEvent;
+		memset(&redrawEvent, 0, sizeof(redrawEvent));
+		redrawEvent.user.type=redrawEventID;
+		redrawEvent.user.timestamp=SDL_GetTicks();
+		SDL_PushEvent(&redrawEvent);
+	}
 }
 
 void showUpdated(Rect r)
 {
-	SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
-	sdlLock.lock();
-	SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
-	sdlLock.unlock();
+	const SDL_threadID currentThread=SDL_GetThreadID(nullptr);
+	if (currentThread==mainThreadID) {
+		SDL_Rect sdlr = { r.x0, r.y0, r.w, r.h };
+		sdlLock.lock();
+		SDL_UpdateWindowSurfaceRects(window, &sdlr, 1);
+		sdlLock.unlock();
+	} else {
+		SDL_Event redrawEvent;
+		memset(&redrawEvent, 0, sizeof(redrawEvent));
+		redrawEvent.user.type = redrawEventID;
+		redrawEvent.user.timestamp = SDL_GetTicks();
+		redrawEvent.user.data1 = new Rect(r);
+		SDL_PushEvent(&redrawEvent);
+	}
 }
 
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
@@ -337,12 +383,14 @@ bool markRegion(Rect r, const Color& bracketColor)
 /// displays pixels, set to true in the given array in yellow on the screen
 void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE])
 {
+	sdlLock.lock();
 	Uint32 YELLOW = Color(1, 1, 0).toRGB32(screen->format->Rshift, screen->format->Gshift, screen->format->Bshift);
 	for (int y = 0; y < screen->h; y++) {
 		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
 		for (int x = 0; x < screen->w; x++)
 			if (needsAA[y][x]) row[x] = YELLOW;
 	}
+	sdlLock.unlock();
 	showUpdatedFullscreen();
 }
 
