@@ -41,6 +41,7 @@ std::vector<SDL_Event> savedEvents;
 std::vector<Rect> updatedRects;
 bool isInteractive, mouseGrabbed;
 volatile static bool exitRequested = false;
+Uint32 redrawEventID=~0U; ///< Custom user event ID to be used for requesting a redraw from arbitrary thread (after update rects have been pushed to the updatedRects).
 
 /// try to create a frame window with the given dimensions
 bool initGraphics(int frameWidth, int frameHeight)
@@ -62,6 +63,8 @@ bool initGraphics(int frameWidth, int frameHeight)
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
 		return false;
 	}
+	// Use the dedicated registration function to avoid ID collisions in case of updated SDL shared library.
+	redrawEventID = SDL_RegisterEvents(1);
 	return true;
 }
 
@@ -142,6 +145,37 @@ static void toggleMouseGrab()
 	}
 }
 
+static void updateWindowSurface(bool updateAll) {
+	rectsLock.lock();
+	if (!updatedRects.empty() || updateAll) {
+		std::vector<Rect> toUpdate;
+		toUpdate.swap(updatedRects);
+		rectsLock.unlock();
+		if (!updateAll) {
+			for (auto& r : toUpdate) {
+				if (r.x0 == -1 && r.y0 == -1) {
+					updateAll = true;
+					break;
+				}
+			}
+		}
+		if (updateAll) {
+			SDL_UpdateWindowSurface(window);
+		} else {
+			std::vector<SDL_Rect> toUpdateSDL(toUpdate.size());
+			for (int i = 0; i < int(toUpdate.size()); i++) {
+				toUpdateSDL[i].x = toUpdate[i].x0;
+				toUpdateSDL[i].y = toUpdate[i].y0;
+				toUpdateSDL[i].w = toUpdate[i].w;
+				toUpdateSDL[i].h = toUpdate[i].h;
+			}
+			SDL_UpdateWindowSurfaceRects(window, toUpdateSDL.data(), int(toUpdate.size()));
+		}
+	} else {
+		rectsLock.unlock();
+	}
+}
+
 static bool handleSystemEvent(const SDL_Event& ev)
 {
 	switch (ev.type) {
@@ -150,7 +184,7 @@ static bool handleSystemEvent(const SDL_Event& ev)
 			return true;
 		case SDL_WINDOWEVENT:
 		{
-			if (isWindowRedrawEvent(ev)) showUpdatedFullscreen();
+			if (isWindowRedrawEvent(ev)) updateWindowSurface(true);
 			return true;
 		}
 		case SDL_KEYDOWN:
@@ -176,7 +210,13 @@ static bool handleSystemEvent(const SDL_Event& ev)
 				toggleMouseGrab();
 				return true;
 			}
+			break;
 		}
+		default:
+			if (ev.type == redrawEventID) {
+				updateWindowSurface(false);
+				return true;
+			}
 	}
 	return false;
 }
@@ -199,38 +239,11 @@ void uiMainLoop()
 {
 	SDL_Event ev;
 
-	while (!exitRequested) {
-		if (SDL_WaitEventTimeout(&ev, 100) && !handleSystemEvent(ev)) {
+	while (!exitRequested && SDL_WaitEvent(&ev)) {
+		if (!handleSystemEvent(ev)) {
 			eventLock.lock();
 			savedEvents.push_back(ev);
 			eventLock.unlock();
-		}
-		rectsLock.lock();
-		if (!updatedRects.empty()) {
-			std::vector<Rect> toUpdate;
-			toUpdate.swap(updatedRects);
-			rectsLock.unlock();
-			bool updateAll = false;
-			for (auto& r: toUpdate) {
-				if (r.x0 == -1 && r.y0 == -1) {
-					updateAll = true;
-					break;
-				}
-			}
-			if (updateAll) {
-				SDL_UpdateWindowSurface(window);
-			} else {
-				std::vector<SDL_Rect> toUpdateSDL(toUpdate.size());
-				for (int i = 0; i < int(toUpdate.size()); i++) {
-					toUpdateSDL[i].x = toUpdate[i].x0;
-					toUpdateSDL[i].y = toUpdate[i].y0;
-					toUpdateSDL[i].w = toUpdate[i].w;
-					toUpdateSDL[i].h = toUpdate[i].h;
-				}
-				SDL_UpdateWindowSurfaceRects(window, toUpdateSDL.data(), int(toUpdate.size()));
-			}
-		} else {
-			rectsLock.unlock();
 		}
 	}
 }
@@ -297,18 +310,23 @@ bool drawRect(Rect r, const Color& c)
 	return true;
 }
 
-void showUpdatedFullscreen()
-{
-	rectsLock.lock();
-	updatedRects.push_back(Rect(-1, -1, -1, -1));
-	rectsLock.unlock();
-}
-
 void showUpdated(Rect r)
 {
 	rectsLock.lock();
 	updatedRects.push_back(r);
 	rectsLock.unlock();
+
+	// Push the event to the main thread as a custom user event (this is thread safe).
+	SDL_Event redrawEvent;
+	memset(&redrawEvent, 0, sizeof(redrawEvent));
+	redrawEvent.user.type=redrawEventID;
+	redrawEvent.user.timestamp=SDL_GetTicks();
+	SDL_PushEvent(&redrawEvent);
+}
+
+void showUpdatedFullscreen()
+{
+	showUpdated(Rect{ -1, -1, -1, -1 });
 }
 
 bool displayVFBRect(Rect r, Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
