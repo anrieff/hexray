@@ -555,8 +555,9 @@ int main(int argc, char** argv)
 		};
 	// open up the window
 	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
-	void uiMainLoop(void);
+	// start rendering in a separate thread ...
 	std::thread renderThread(renderThreadEntry);
+	// ...while the main thread handles the events and graphics I/O
 	uiMainLoop();
 	// in case of early exit the render thread has to be waited before closing the
 	// graphics, because it may still try to show the VFB

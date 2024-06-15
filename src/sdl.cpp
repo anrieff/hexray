@@ -312,16 +312,25 @@ bool drawRect(Rect r, const Color& c)
 
 void showUpdated(Rect r)
 {
+	Uint32 timestamp = SDL_GetTicks();
+	static Uint32 prevRedraw = 0;
 	rectsLock.lock();
 	updatedRects.push_back(r);
+	bool sendEvent = false;
+	if ((r.x0 == -1 && r.y0 == -1) || (timestamp - prevRedraw > 100)) {
+		prevRedraw = timestamp;
+		sendEvent = true;
+	}
 	rectsLock.unlock();
 
 	// Push the event to the main thread as a custom user event (this is thread safe).
-	SDL_Event redrawEvent;
-	memset(&redrawEvent, 0, sizeof(redrawEvent));
-	redrawEvent.user.type=redrawEventID;
-	redrawEvent.user.timestamp=SDL_GetTicks();
-	SDL_PushEvent(&redrawEvent);
+	if (sendEvent) {
+		SDL_Event redrawEvent;
+		memset(&redrawEvent, 0, sizeof(redrawEvent));
+		redrawEvent.user.type = redrawEventID;
+		redrawEvent.user.timestamp  =timestamp;
+		SDL_PushEvent(&redrawEvent);
+	}
 }
 
 void showUpdatedFullscreen()

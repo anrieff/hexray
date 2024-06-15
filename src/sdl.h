@@ -73,3 +73,5 @@ void showUpdated(Rect r);
 bool markRegion(Rect r, const Color& bracketColor = Color(0, 0, 0.5f));
 /// displays a mask of pixels on top of the currently shown screen contents
 void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE]);
+/// runs the event handling I/O. Must be run from main(), in order for getSDLInputs() to work.
+void uiMainLoop();
